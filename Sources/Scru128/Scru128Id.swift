@@ -92,7 +92,9 @@ public struct Scru128Id: LosslessStringConvertible, Comparable, Hashable {
   /// Returns true if `lhs` is less than `rhs`.
   public static func < (lhs: Scru128Id, rhs: Scru128Id) -> Bool {
     for i in 0..<lhs.bytes.count {
-      if lhs.bytes[i] < rhs.bytes[i] { return true }
+      if lhs.bytes[i] != rhs.bytes[i] {
+        return lhs.bytes[i] < rhs.bytes[i]
+      }
     }
     return false
   }

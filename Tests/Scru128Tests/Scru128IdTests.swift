@@ -50,44 +50,43 @@ final class Scru128IdTests: XCTestCase {
         obj
       )
     }
+  }
 
-    /// Supports comparison operators
-    func testComparisonOperators() throws {
-      var ordered = [
-        Scru128Id(timestamp: 0, counter: 0, perSecRandom: 0, perGenRandom: 0),
-        Scru128Id(timestamp: 0, counter: 0, perSecRandom: 0, perGenRandom: 1),
-        Scru128Id(timestamp: 0, counter: 0, perSecRandom: 0, perGenRandom: 0xFFFF_FFFF),
-        Scru128Id(timestamp: 0, counter: 0, perSecRandom: 1, perGenRandom: 0),
-        Scru128Id(timestamp: 0, counter: 0, perSecRandom: 0xFF_FFFF, perGenRandom: 0),
-        Scru128Id(timestamp: 0, counter: 1, perSecRandom: 0, perGenRandom: 0),
-        Scru128Id(timestamp: 0, counter: 0xFFF_FFFF, perSecRandom: 0, perGenRandom: 0),
-        Scru128Id(timestamp: 1, counter: 0, perSecRandom: 0, perGenRandom: 0),
-        Scru128Id(timestamp: 2, counter: 0, perSecRandom: 0, perGenRandom: 0),
-      ]
+  /// Supports comparison operators
+  func testComparisonOperators() throws {
+    var ordered = [
+      Scru128Id(timestamp: 0, counter: 0, perSecRandom: 0, perGenRandom: 0),
+      Scru128Id(timestamp: 0, counter: 0, perSecRandom: 0, perGenRandom: 1),
+      Scru128Id(timestamp: 0, counter: 0, perSecRandom: 0, perGenRandom: 0xFFFF_FFFF),
+      Scru128Id(timestamp: 0, counter: 0, perSecRandom: 1, perGenRandom: 0),
+      Scru128Id(timestamp: 0, counter: 0, perSecRandom: 0xFF_FFFF, perGenRandom: 0),
+      Scru128Id(timestamp: 0, counter: 1, perSecRandom: 0, perGenRandom: 0),
+      Scru128Id(timestamp: 0, counter: 0xFFF_FFFF, perSecRandom: 0, perGenRandom: 0),
+      Scru128Id(timestamp: 1, counter: 0, perSecRandom: 0, perGenRandom: 0),
+      Scru128Id(timestamp: 2, counter: 0, perSecRandom: 0, perGenRandom: 0),
+    ]
 
-      let g = Scru128Generator()
-      for _ in 0..<1_000 {
-        ordered.append(g.generate())
-      }
-
-      var prev = ordered.removeFirst()
-      for curr in ordered {
-        XCTAssertNotEqual(curr, prev)
-        XCTAssertNotEqual(prev, curr)
-        XCTAssertNotEqual(curr.hashValue, prev.hashValue)
-        XCTAssertGreaterThan(curr, prev)
-        XCTAssertGreaterThanOrEqual(curr, prev)
-        XCTAssertLessThan(prev, curr)
-        XCTAssertLessThanOrEqual(prev, curr)
-
-        let clone = curr
-        XCTAssertEqual(curr, clone)
-        XCTAssertEqual(clone, curr)
-        XCTAssertEqual(curr.hashValue, clone.hashValue)
-
-        prev = curr
-      }
+    let g = Scru128Generator()
+    for _ in 0..<1_000 {
+      ordered.append(g.generate())
     }
 
+    var prev = ordered.removeFirst()
+    for curr in ordered {
+      XCTAssertNotEqual(curr, prev)
+      XCTAssertNotEqual(prev, curr)
+      XCTAssertNotEqual(curr.hashValue, prev.hashValue)
+      XCTAssertGreaterThan(curr, prev)
+      XCTAssertGreaterThanOrEqual(curr, prev)
+      XCTAssertLessThan(prev, curr)
+      XCTAssertLessThanOrEqual(prev, curr)
+
+      let clone = curr
+      XCTAssertEqual(curr, clone)
+      XCTAssertEqual(clone, curr)
+      XCTAssertEqual(curr.hashValue, clone.hashValue)
+
+      prev = curr
+    }
   }
 }

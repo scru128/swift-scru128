@@ -48,4 +48,27 @@ final class Scru128Tests: XCTestCase {
       prev = curr
     }
   }
+
+  /// Generates no IDs sharing same timestamp and counter under multithreading
+  func testThreading() throws {
+    var results: [String] = []
+    let resultsQueue = DispatchQueue(label: "serial queue to protect array")
+
+    let group = DispatchGroup()
+    for _ in 0..<4 {
+      DispatchQueue.global().async(group: group) {
+        let xs = (0..<10_000).map { _ in scru128() }
+        resultsQueue.sync { results.append(contentsOf: xs) }
+      }
+    }
+    group.wait()
+
+    let set = Set<String>(
+      results.map {
+        let obj = Scru128Id($0)!
+        return "\(obj.timestamp)-\(obj.counter)"
+      }
+    )
+    XCTAssertEqual(set.count, results.count)
+  }
 }
