@@ -15,9 +15,7 @@ final class Scru128IdTests: XCTestCase {
     ]
 
     for e in cases {
-      let fromFields = Scru128Id(
-        timestamp: e.0.0, counter: e.0.1, perSecRandom: e.0.2, perGenRandom: e.0.3
-      )
+      let fromFields = Scru128Id(e.0.0, e.0.1, e.0.2, e.0.3)
       let fromString = Scru128Id(e.1)!
 
       XCTAssertEqual(fromFields, fromString)
@@ -34,19 +32,21 @@ final class Scru128IdTests: XCTestCase {
     }
   }
 
-  /// Has symmetric converters from/to String and fields
+  /// Has symmetric converters from/to String, fields, and serialized form
   func testSymmetricConverters() throws {
+    let encoder = JSONEncoder()
+    let decoder = JSONDecoder()
+
     let g = Scru128Generator()
     for _ in 0..<1_000 {
       let obj = g.generate()
       XCTAssertEqual(Scru128Id(obj.description)!, obj)
       XCTAssertEqual(
-        Scru128Id(
-          timestamp: obj.timestamp,
-          counter: obj.counter,
-          perSecRandom: obj.perSecRandom,
-          perGenRandom: obj.perGenRandom
-        ),
+        Scru128Id(obj.timestamp, obj.counter, obj.perSecRandom, obj.perGenRandom),
+        obj
+      )
+      XCTAssertEqual(
+        try decoder.decode(Scru128Id.self, from: try encoder.encode(obj)),
         obj
       )
     }
@@ -55,15 +55,15 @@ final class Scru128IdTests: XCTestCase {
   /// Supports comparison operators
   func testComparisonOperators() throws {
     var ordered = [
-      Scru128Id(timestamp: 0, counter: 0, perSecRandom: 0, perGenRandom: 0),
-      Scru128Id(timestamp: 0, counter: 0, perSecRandom: 0, perGenRandom: 1),
-      Scru128Id(timestamp: 0, counter: 0, perSecRandom: 0, perGenRandom: 0xFFFF_FFFF),
-      Scru128Id(timestamp: 0, counter: 0, perSecRandom: 1, perGenRandom: 0),
-      Scru128Id(timestamp: 0, counter: 0, perSecRandom: 0xFF_FFFF, perGenRandom: 0),
-      Scru128Id(timestamp: 0, counter: 1, perSecRandom: 0, perGenRandom: 0),
-      Scru128Id(timestamp: 0, counter: 0xFFF_FFFF, perSecRandom: 0, perGenRandom: 0),
-      Scru128Id(timestamp: 1, counter: 0, perSecRandom: 0, perGenRandom: 0),
-      Scru128Id(timestamp: 2, counter: 0, perSecRandom: 0, perGenRandom: 0),
+      Scru128Id(0, 0, 0, 0),
+      Scru128Id(0, 0, 0, 1),
+      Scru128Id(0, 0, 0, 0xFFFF_FFFF),
+      Scru128Id(0, 0, 1, 0),
+      Scru128Id(0, 0, 0xFF_FFFF, 0),
+      Scru128Id(0, 1, 0, 0),
+      Scru128Id(0, 0xFFF_FFFF, 0, 0),
+      Scru128Id(1, 0, 0, 0),
+      Scru128Id(2, 0, 0, 0),
     ]
 
     let g = Scru128Generator()
@@ -85,8 +85,32 @@ final class Scru128IdTests: XCTestCase {
       XCTAssertEqual(curr, clone)
       XCTAssertEqual(clone, curr)
       XCTAssertEqual(curr.hashValue, clone.hashValue)
+      XCTAssertGreaterThanOrEqual(curr, clone)
+      XCTAssertGreaterThanOrEqual(clone, curr)
+      XCTAssertLessThanOrEqual(curr, clone)
+      XCTAssertLessThanOrEqual(clone, curr)
 
       prev = curr
+    }
+  }
+
+  /// Serializes and deserializes an object using the canonical string representation.
+  func testSerializedForm() throws {
+    let encoder = JSONEncoder()
+    let decoder = JSONDecoder()
+
+    let g = Scru128Generator()
+    for _ in 0..<1_000 {
+      let obj = g.generate()
+      let strJson = "\"\(obj)\""
+      XCTAssertEqual(
+        String(data: try encoder.encode(obj), encoding: .utf8),
+        strJson
+      )
+      XCTAssertEqual(
+        try decoder.decode(Scru128Id.self, from: strJson.data(using: .utf8)!),
+        obj
+      )
     }
   }
 }

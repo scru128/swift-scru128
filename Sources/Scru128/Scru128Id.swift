@@ -1,10 +1,18 @@
 /// Represents a SCRU128 ID and provides converters to/from string and numbers.
-public struct Scru128Id: LosslessStringConvertible, Comparable, Hashable {
+public struct Scru128Id: LosslessStringConvertible {
   /// Internal 128-bit byte array representation.
   private let bytes: [UInt8]
 
   /// Creates an object from field values.
-  public init(timestamp: UInt64, counter: UInt32, perSecRandom: UInt32, perGenRandom: UInt32) {
+  ///
+  /// - Parameters:
+  ///   - timestamp: 44-bit millisecond timestamp field value.
+  ///   - counter: 28-bit per-timestamp monotonic counter field value.
+  ///   - perSecRandom: 24-bit per-second randomness field value.
+  ///   - perGenRandom: 32-bit per-generation randomness field value.
+  public init(
+    _ timestamp: UInt64, _ counter: UInt32, _ perSecRandom: UInt32, _ perGenRandom: UInt32
+  ) {
     precondition(timestamp <= 0xFFF_FFFF_FFFF)
     precondition(counter <= maxCounter)
     precondition(perSecRandom <= maxPerSecRandom)
@@ -84,21 +92,6 @@ public struct Scru128Id: LosslessStringConvertible, Comparable, Hashable {
     return String(chars)
   }
 
-  /// Returns true if `lhs` equals to `rhs`.
-  public static func == (lhs: Scru128Id, rhs: Scru128Id) -> Bool {
-    return lhs.bytes == rhs.bytes
-  }
-
-  /// Returns true if `lhs` is less than `rhs`.
-  public static func < (lhs: Scru128Id, rhs: Scru128Id) -> Bool {
-    for i in 0..<lhs.bytes.count {
-      if lhs.bytes[i] != rhs.bytes[i] {
-        return lhs.bytes[i] < rhs.bytes[i]
-      }
-    }
-    return false
-  }
-
   /// Returns a part of `bytes` as an unsigned integer.
   private func subUInt<T: UnsignedInteger>(_ range: Range<Int>) -> T {
     var buffer: T = 0
@@ -111,3 +104,32 @@ public struct Scru128Id: LosslessStringConvertible, Comparable, Hashable {
 }
 
 private let digits = [Character]("0123456789ABCDEFGHIJKLMNOPQRSTUV")
+
+extension Scru128Id: Comparable, Hashable {
+  public static func == (lhs: Scru128Id, rhs: Scru128Id) -> Bool {
+    return lhs.bytes == rhs.bytes
+  }
+
+  public static func < (lhs: Scru128Id, rhs: Scru128Id) -> Bool {
+    for i in 0..<lhs.bytes.count {
+      if lhs.bytes[i] != rhs.bytes[i] {
+        return lhs.bytes[i] < rhs.bytes[i]
+      }
+    }
+    return false
+  }
+}
+
+extension Scru128Id: Codable {
+  /// Encodes the object as a 26-digit canonical string representation.
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(description)
+  }
+
+  /// Decodes the object from a 26-digit canonical string representation.
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    self.init(try container.decode(String.self))!
+  }
+}

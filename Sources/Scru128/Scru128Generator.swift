@@ -28,8 +28,7 @@ public class Scru128Generator {
 
   /// Creates a generator object with a specified random number generator.
   ///
-  /// The specified random number generator should be cryptographically strong and securely
-  /// seeded.
+  /// The specified random number generator should be cryptographically strong and securely seeded.
   public init(rng: RandomNumberGenerator) {
     self.rng = rng
   }
@@ -78,12 +77,7 @@ public class Scru128Generator {
       perSecRandom = rng.next() & maxPerSecRandom
     }
 
-    return Scru128Id(
-      timestamp: tsNow - timestampBias,
-      counter: counter,
-      perSecRandom: perSecRandom,
-      perGenRandom: rng.next()
-    )
+    return Scru128Id(tsNow - timestampBias, counter, perSecRandom, rng.next())
   }
 }
 
