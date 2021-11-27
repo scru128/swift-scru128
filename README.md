@@ -25,6 +25,27 @@ See [SCRU128 Specification] for details.
 [ksuid]: https://github.com/segmentio/ksuid
 [scru128 specification]: https://github.com/scru128/spec
 
+## Add swift-scru128 as a package dependency
+
+To add this library to your Xcode project as a dependency, select File > Add
+Packages and enter the package URL: https://github.com/scru128/swift-scru128
+
+To use this library in a SwiftPM project, add the following line to the
+dependencies in your Package.swift file:
+
+```swift
+.package(url: "https://github.com/scru128/swift-scru128", from: "0.2.1"),
+```
+
+And, include `Scru128` as a dependency for your target:
+
+```swift
+.target(
+  name: "<target>",
+  dependencies: [.product(name: "Scru128", package: "swift-scru128")]
+)
+```
+
 ## License
 
 Copyright 2021 LiosK

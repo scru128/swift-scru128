@@ -7,6 +7,4 @@ private let defaultGenerator = Scru128Generator()
 ///
 /// Use this function to quickly get a new SCRU128 ID as a string. Use ``Scru128Generator`` to do
 /// more.
-public func scru128() -> String {
-  return defaultGenerator.generate().description
-}
+public func scru128() -> String { defaultGenerator.generate().description }

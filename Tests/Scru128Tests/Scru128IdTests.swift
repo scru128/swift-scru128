@@ -32,7 +32,7 @@ final class Scru128IdTests: XCTestCase {
     }
   }
 
-  /// Has symmetric converters from/to String, fields, and serialized form
+  /// Has symmetric converters from/to String, byte array, fields, and serialized form
   func testSymmetricConverters() throws {
     let encoder = JSONEncoder()
     let decoder = JSONDecoder()
@@ -41,6 +41,7 @@ final class Scru128IdTests: XCTestCase {
     for _ in 0..<1_000 {
       let obj = g.generate()
       XCTAssertEqual(Scru128Id(obj.description)!, obj)
+      XCTAssertEqual(Scru128Id(obj.bytes), obj)
       XCTAssertEqual(
         Scru128Id(obj.timestamp, obj.counter, obj.perSecRandom, obj.perGenRandom),
         obj

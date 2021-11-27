@@ -1,7 +1,18 @@
 /// Represents a SCRU128 ID and provides converters to/from string and numbers.
 public struct Scru128Id: LosslessStringConvertible {
-  /// Internal 128-bit byte array representation.
-  private let bytes: [UInt8]
+  /// Returns a 16-byte byte array containing the 128-bit unsigned integer representation in the
+  /// big-endian (network) byte order.
+  public let bytes: [UInt8]
+
+  /// Creates an object from a byte array that represents a 128-bit unsigned integer.
+  ///
+  /// - Parameter bytes: A 16-byte byte array that represents a 128-bit unsigned integer in the
+  ///                    big-endian (network) byte order.
+  /// - Precondition: The byte array must be 16-byte length.
+  public init(_ bytes: [UInt8]) {
+    precondition(bytes.count == 16)
+    self.bytes = bytes
+  }
 
   /// Creates an object from field values.
   ///
@@ -10,6 +21,7 @@ public struct Scru128Id: LosslessStringConvertible {
   ///   - counter: 28-bit per-timestamp monotonic counter field value.
   ///   - perSecRandom: 24-bit per-second randomness field value.
   ///   - perGenRandom: 32-bit per-generation randomness field value.
+  /// - Precondition: Each argument must be within the value range of the field.
   public init(
     _ timestamp: UInt64, _ counter: UInt32, _ perSecRandom: UInt32, _ perGenRandom: UInt32
   ) {
@@ -77,19 +89,20 @@ public struct Scru128Id: LosslessStringConvertible {
 
   /// Returns the 26-digit canonical string representation.
   public var description: String {
-    var chars = [Character](repeating: "0", count: 26)
-    chars[0] = digits[Int(bytes[0] >> 5)]
-    chars[1] = digits[Int(bytes[0] & 31)]
+    var cstr = [UInt8](repeating: 0, count: 27)
+    cstr[0] = digits[Int(bytes[0] >> 5)]
+    cstr[1] = digits[Int(bytes[0] & 31)]
 
     // process three 40-bit (5-byte / 8-digit) groups
     for i in 0..<3 {
       var buffer: UInt64 = subUInt((1 + i * 5)..<(6 + i * 5))
       for j in 0..<8 {
-        chars[9 + i * 8 - j] = digits[Int(buffer & 31)]
+        cstr[9 + i * 8 - j] = digits[Int(buffer & 31)]
         buffer >>= 5
       }
     }
-    return String(chars)
+    assert(cstr.last == 0)
+    return String(cString: cstr)
   }
 
   /// Returns a part of `bytes` as an unsigned integer.
@@ -103,7 +116,7 @@ public struct Scru128Id: LosslessStringConvertible {
   }
 }
 
-private let digits = [Character]("0123456789ABCDEFGHIJKLMNOPQRSTUV")
+private let digits = [UInt8]("0123456789ABCDEFGHIJKLMNOPQRSTUV".utf8)
 
 extension Scru128Id: Comparable, Hashable {
   public static func == (lhs: Scru128Id, rhs: Scru128Id) -> Bool {
