@@ -1,7 +1,7 @@
 import Foundation
 
-/// Represents a SCRU128 ID generator and provides an interface to do more than just generate a
-/// string representation.
+/// Represents a SCRU128 ID generator that encapsulates the monotonic counter and other internal
+/// states.
 public class Scru128Generator {
   /// Timestamp at last generation.
   private var tsLastGen: UInt64 = 0
@@ -15,7 +15,7 @@ public class Scru128Generator {
   /// Per-second random value at last generation.
   private var perSecRandom: UInt32 = 0
 
-  /// Maximum number of checking `Date()` until clock goes forward.
+  /// Maximum number of checking the system clock until it goes forward.
   private let nClockCheckMax = 1_000_000
 
   private let lock: NSLocking = NSLock()
@@ -44,9 +44,8 @@ public class Scru128Generator {
 
   /// Generates a new SCRU128 ID object without overhead for thread safety.
   private func generateThreadUnsafe() -> Scru128Id {
-    var tsNow = UInt64(Date().timeIntervalSince1970 * 1_000)
-
     // update timestamp and counter
+    var tsNow = UInt64(Date().timeIntervalSince1970 * 1_000)
     if tsNow > tsLastGen {
       tsLastGen = tsNow
       counter = rng.next() & maxCounter

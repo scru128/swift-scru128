@@ -14,8 +14,13 @@ decentralized, globally unique time-ordered identifiers. SCRU128 is inspired by
 ```swift
 import Scru128
 
-print(scru128()) // e.g. "00RNOS8DGRPBRNGKN57QHSVFDC"
-print(scru128()) // e.g. "00RNOS8DGRPBRNIKN57RO9NCBG"
+// generate a new identifier object
+let x = scru128()
+print(x)  // e.g. "00S6GVKR1MH58KE72EJD87SDOO"
+print(x.bytes)  // as a 128-bit unsigned integer in big-endian byte array
+
+// generate a textual representation directly
+print(scru128String())  // e.g. "00S6GVKR3F7R79I72EJF0J4RGC"
 ```
 
 See [SCRU128 Specification] for details.
@@ -34,7 +39,7 @@ To use this library in a SwiftPM project, add the following line to the
 dependencies in your Package.swift file:
 
 ```swift
-.package(url: "https://github.com/scru128/swift-scru128", from: "0.2.1"),
+.package(url: "https://github.com/scru128/swift-scru128", from: "0.3.0"),
 ```
 
 And, include `Scru128` as a dependency for your target:

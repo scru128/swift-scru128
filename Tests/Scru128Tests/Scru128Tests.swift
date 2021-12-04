@@ -3,7 +3,7 @@ import XCTest
 @testable import Scru128
 
 final class Scru128Tests: XCTestCase {
-  static let samples: [String] = (0..<100_000).map { _ in scru128() }
+  static let samples: [String] = (0..<100_000).map { _ in scru128String() }
 
   /// Generates 26-digit canonical string
   func testFormat() throws {
@@ -50,7 +50,7 @@ final class Scru128Tests: XCTestCase {
 
   /// Generates no IDs sharing same timestamp and counter under multithreading
   func testThreading() throws {
-    var results: [String] = []
+    var results: [Scru128Id] = []
     let resultsQueue = DispatchQueue(label: "serial queue to protect array")
 
     let group = DispatchGroup()
@@ -62,12 +62,7 @@ final class Scru128Tests: XCTestCase {
     }
     group.wait()
 
-    let set = Set<String>(
-      results.map {
-        let obj = Scru128Id($0)!
-        return "\(obj.timestamp)-\(obj.counter)"
-      }
-    )
+    let set = Set<String>(results.map { "\($0.timestamp)-\($0.counter)" })
     XCTAssertEqual(set.count, results.count)
   }
 }

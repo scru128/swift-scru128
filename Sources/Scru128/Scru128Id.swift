@@ -116,6 +116,7 @@ public struct Scru128Id: LosslessStringConvertible {
   }
 }
 
+/// Digit characters used in the base 32 notation.
 private let digits = [UInt8]("0123456789ABCDEFGHIJKLMNOPQRSTUV".utf8)
 
 extension Scru128Id: Comparable, Hashable {
