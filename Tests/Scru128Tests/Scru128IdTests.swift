@@ -8,10 +8,15 @@ final class Scru128IdTests: XCTestCase {
     let cases: [((UInt64, UInt32, UInt32, UInt32), String)] = [
       ((0, 0, 0, 0), "00000000000000000000000000"),
       (((1 << 44) - 1, 0, 0, 0), "7VVVVVVVVG0000000000000000"),
+      (((1 << 44) - 1, 0, 0, 0), "7vvvvvvvvg0000000000000000"),
       ((0, (1 << 28) - 1, 0, 0), "000000000FVVVVU00000000000"),
+      ((0, (1 << 28) - 1, 0, 0), "000000000fvvvvu00000000000"),
       ((0, 0, (1 << 24) - 1, 0), "000000000000001VVVVS000000"),
+      ((0, 0, (1 << 24) - 1, 0), "000000000000001vvvvs000000"),
       ((0, 0, 0, 0xFFFF_FFFF), "00000000000000000003VVVVVV"),
+      ((0, 0, 0, 0xFFFF_FFFF), "00000000000000000003vvvvvv"),
       (((1 << 44) - 1, (1 << 28) - 1, (1 << 24) - 1, 0xFFFF_FFFF), "7VVVVVVVVVVVVVVVVVVVVVVVVV"),
+      (((1 << 44) - 1, (1 << 28) - 1, (1 << 24) - 1, 0xFFFF_FFFF), "7vvvvvvvvvvvvvvvvvvvvvvvvv"),
     ]
 
     for e in cases {
@@ -27,8 +32,32 @@ final class Scru128IdTests: XCTestCase {
       XCTAssertEqual(fromString.perSecRandom, e.0.2)
       XCTAssertEqual(fromFields.perGenRandom, e.0.3)
       XCTAssertEqual(fromString.perGenRandom, e.0.3)
-      XCTAssertEqual(fromFields.description, e.1)
-      XCTAssertEqual(fromString.description, e.1)
+      XCTAssertEqual(fromFields.description, e.1.uppercased())
+      XCTAssertEqual(fromString.description, e.1.uppercased())
+    }
+  }
+
+  /// Returns error if an invalid string representation is supplied
+  func testStringValidation() throws {
+    let cases = [
+      "",
+      " 00SCT4FL89GQPRHN44C4LFM0OV",
+      "00SCT4FL89GQPRJN44C7SQO381 ",
+      " 00SCT4FL89GQPRLN44C4BGCIIO ",
+      "+00SCT4FL89GQPRNN44C4F3QD24",
+      "-00SCT4FL89GQPRPN44C7H4E5RC",
+      "+0SCT4FL89GQPRRN44C55Q7RVC",
+      "-0SCT4FL89GQPRTN44C6PN0A2R",
+      "00SCT4FL89WQPRVN44C41RGVMM",
+      "00SCT4FL89GQPS1N4_C54QDC5O",
+      "00SCT4-L89GQPS3N44C602O0K8",
+      "00SCT4FL89GQPS N44C7VHS5QJ",
+      "80000000000000000000000000",
+      "VVVVVVVVVVVVVVVVVVVVVVVVVV",
+    ]
+
+    for e in cases {
+      XCTAssertNil(Scru128Id(e))
     }
   }
 
@@ -95,7 +124,7 @@ final class Scru128IdTests: XCTestCase {
     }
   }
 
-  /// Serializes and deserializes an object using the canonical string representation.
+  /// Serializes and deserializes an object using the canonical string representation
   func testSerializedForm() throws {
     let encoder = JSONEncoder()
     let decoder = JSONDecoder()

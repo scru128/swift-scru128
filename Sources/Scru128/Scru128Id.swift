@@ -1,4 +1,4 @@
-/// Represents a SCRU128 ID and provides converters to/from string and numbers.
+/// Represents a SCRU128 ID and provides various converters and comparison operators.
 public struct Scru128Id: LosslessStringConvertible {
   /// Returns a 16-byte byte array containing the 128-bit unsigned integer representation in the
   /// big-endian (network) byte order.
@@ -52,7 +52,9 @@ public struct Scru128Id: LosslessStringConvertible {
   public init?(_ description: String) {
     if description.count != 26
       || description.first! > "7"
-      || description.contains(where: { $0 < "0" || $0 > "V" || ($0 > "9" && $0 < "A") })
+      || description.uppercased().contains(
+        where: { $0 < "0" || $0 > "V" || ($0 > "9" && $0 < "A") }
+      )
     {
       return nil
     }

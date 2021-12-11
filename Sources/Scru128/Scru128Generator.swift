@@ -52,14 +52,13 @@ public class Scru128Generator {
     } else {
       counter += 1
       if counter > maxCounter {
-        let logger: MinimumLogging? = getLogger()
         logger?.info("counter limit reached; will wait until clock goes forward")
         var nClockCheck = 0
         while tsNow <= tsLastGen {
           tsNow = UInt64(Date().timeIntervalSince1970 * 1_000)
           nClockCheck += 1
           if nClockCheck > nClockCheckMax {
-            logger?.warning("reset state as clock did not go forward")
+            logger?.notice("reset state as clock did not go forward")
             tsLastSec = 0
             break
           }
@@ -83,30 +82,24 @@ public class Scru128Generator {
 /// Unix time in milliseconds at 2020-01-01 00:00:00+00:00.
 private let timestampBias: UInt64 = 1_577_836_800_000
 
-/// Minimum logger interface
-private protocol MinimumLogging {
+/// Defines the logger interface used in the package.
+public protocol Scru128Logging {
+  /// Logs message at error level.
+  func error(_ message: String)
+
+  /// Logs message at default level.
+  func notice(_ message: String)
+
+  /// Logs message at info level.
   func info(_ message: String)
-  func warning(_ message: String)
 }
 
-// Ad-hoc logger wrapper
-#if canImport(os)
-  import os
+/// Logger object used in the package.
+var logger: Scru128Logging? = nil
 
-  @available(iOS 14.0, macOS 11.0, macCatalyst 14.0, tvOS 14.0, watchOS 7.0, *)
-  private struct LoggerWrapper: MinimumLogging {
-    let logger = Logger(subsystem: "io.github.scru128", category: "Scru128Generator")
-    func info(_ message: String) { logger.info("\(message)") }
-    func warning(_ message: String) { logger.warning("\(message)") }
-  }
-
-  private func getLogger() -> MinimumLogging? {
-    if #available(iOS 14.0, macOS 11.0, macCatalyst 14.0, tvOS 14.0, watchOS 7.0, *) {
-      return LoggerWrapper()
-    } else {
-      return nil
-    }
-  }
-#else
-  private func getLogger() -> MinimumLogging? { nil }
-#endif
+/// Specifies the logger object used in the package.
+///
+/// Logging is disabled by default. Set a thread-safe logger to enable logging.
+public func setScru128Logger(_ newLogger: Scru128Logging) {
+  logger = newLogger
+}
