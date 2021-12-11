@@ -39,7 +39,7 @@ To use this library in a SwiftPM project, add the following line to the
 dependencies in your Package.swift file:
 
 ```swift
-.package(url: "https://github.com/scru128/swift-scru128", from: "0.3.0"),
+.package(url: "https://github.com/scru128/swift-scru128", from: "0.4.1"),
 ```
 
 And, include `Scru128` as a dependency for your target:
