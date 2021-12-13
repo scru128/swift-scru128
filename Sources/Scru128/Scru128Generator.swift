@@ -26,9 +26,8 @@ public class Scru128Generator {
     self.init(rng: SystemRandomNumberGenerator())
   }
 
-  /// Creates a generator object with a specified random number generator.
-  ///
-  /// The specified random number generator should be cryptographically strong and securely seeded.
+  /// Creates a generator object with a specified random number generator. The specified random
+  /// number generator should be cryptographically strong and securely seeded.
   public init(rng: RandomNumberGenerator) {
     self.rng = rng
   }

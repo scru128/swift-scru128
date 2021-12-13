@@ -2,21 +2,26 @@ import XCTest
 
 @testable import Scru128
 
+let maxUint44: UInt64 = (1 << 44) - 1
+let maxUint28: UInt32 = (1 << 28) - 1
+let maxUint24: UInt32 = (1 << 24) - 1
+let maxUint32: UInt32 = UInt32.max
+
 final class Scru128IdTests: XCTestCase {
   /// Encodes and decodes prepared cases correctly
   func testEncodeDecode() throws {
     let cases: [((UInt64, UInt32, UInt32, UInt32), String)] = [
       ((0, 0, 0, 0), "00000000000000000000000000"),
-      (((1 << 44) - 1, 0, 0, 0), "7VVVVVVVVG0000000000000000"),
-      (((1 << 44) - 1, 0, 0, 0), "7vvvvvvvvg0000000000000000"),
-      ((0, (1 << 28) - 1, 0, 0), "000000000FVVVVU00000000000"),
-      ((0, (1 << 28) - 1, 0, 0), "000000000fvvvvu00000000000"),
-      ((0, 0, (1 << 24) - 1, 0), "000000000000001VVVVS000000"),
-      ((0, 0, (1 << 24) - 1, 0), "000000000000001vvvvs000000"),
-      ((0, 0, 0, 0xFFFF_FFFF), "00000000000000000003VVVVVV"),
-      ((0, 0, 0, 0xFFFF_FFFF), "00000000000000000003vvvvvv"),
-      (((1 << 44) - 1, (1 << 28) - 1, (1 << 24) - 1, 0xFFFF_FFFF), "7VVVVVVVVVVVVVVVVVVVVVVVVV"),
-      (((1 << 44) - 1, (1 << 28) - 1, (1 << 24) - 1, 0xFFFF_FFFF), "7vvvvvvvvvvvvvvvvvvvvvvvvv"),
+      ((maxUint44, 0, 0, 0), "7VVVVVVVVG0000000000000000"),
+      ((maxUint44, 0, 0, 0), "7vvvvvvvvg0000000000000000"),
+      ((0, maxUint28, 0, 0), "000000000FVVVVU00000000000"),
+      ((0, maxUint28, 0, 0), "000000000fvvvvu00000000000"),
+      ((0, 0, maxUint24, 0), "000000000000001VVVVS000000"),
+      ((0, 0, maxUint24, 0), "000000000000001vvvvs000000"),
+      ((0, 0, 0, maxUint32), "00000000000000000003VVVVVV"),
+      ((0, 0, 0, maxUint32), "00000000000000000003vvvvvv"),
+      ((maxUint44, maxUint28, maxUint24, maxUint32), "7VVVVVVVVVVVVVVVVVVVVVVVVV"),
+      ((maxUint44, maxUint28, maxUint24, maxUint32), "7vvvvvvvvvvvvvvvvvvvvvvvvv"),
     ]
 
     for e in cases {
@@ -61,24 +66,30 @@ final class Scru128IdTests: XCTestCase {
     }
   }
 
-  /// Has symmetric converters from/to String, byte array, fields, and serialized form
+  /// Has symmetric converters from/to various values
   func testSymmetricConverters() throws {
     let encoder = JSONEncoder()
     let decoder = JSONDecoder()
 
+    var cases = [
+      Scru128Id(0, 0, 0, 0),
+      Scru128Id(maxUint44, 0, 0, 0),
+      Scru128Id(0, maxUint28, 0, 0),
+      Scru128Id(0, 0, maxUint24, 0),
+      Scru128Id(0, 0, 0, maxUint32),
+      Scru128Id(maxUint44, maxUint28, maxUint24, maxUint32),
+    ]
+
     let g = Scru128Generator()
     for _ in 0..<1_000 {
-      let obj = g.generate()
-      XCTAssertEqual(Scru128Id(obj.description)!, obj)
-      XCTAssertEqual(Scru128Id(obj.bytes), obj)
-      XCTAssertEqual(
-        Scru128Id(obj.timestamp, obj.counter, obj.perSecRandom, obj.perGenRandom),
-        obj
-      )
-      XCTAssertEqual(
-        try decoder.decode(Scru128Id.self, from: try encoder.encode(obj)),
-        obj
-      )
+      cases.append(g.generate())
+    }
+
+    for e in cases {
+      XCTAssertEqual(Scru128Id(e.description)!, e)
+      XCTAssertEqual(Scru128Id(e.bytes), e)
+      XCTAssertEqual(Scru128Id(e.timestamp, e.counter, e.perSecRandom, e.perGenRandom), e)
+      XCTAssertEqual(try decoder.decode(Scru128Id.self, from: try encoder.encode(e)), e)
     }
   }
 
@@ -87,11 +98,11 @@ final class Scru128IdTests: XCTestCase {
     var ordered = [
       Scru128Id(0, 0, 0, 0),
       Scru128Id(0, 0, 0, 1),
-      Scru128Id(0, 0, 0, 0xFFFF_FFFF),
+      Scru128Id(0, 0, 0, maxUint32),
       Scru128Id(0, 0, 1, 0),
-      Scru128Id(0, 0, 0xFF_FFFF, 0),
+      Scru128Id(0, 0, maxUint24, 0),
       Scru128Id(0, 1, 0, 0),
-      Scru128Id(0, 0xFFF_FFFF, 0, 0),
+      Scru128Id(0, maxUint28, 0, 0),
       Scru128Id(1, 0, 0, 0),
       Scru128Id(2, 0, 0, 0),
     ]
@@ -133,14 +144,8 @@ final class Scru128IdTests: XCTestCase {
     for _ in 0..<1_000 {
       let obj = g.generate()
       let strJson = "\"\(obj)\""
-      XCTAssertEqual(
-        String(data: try encoder.encode(obj), encoding: .utf8),
-        strJson
-      )
-      XCTAssertEqual(
-        try decoder.decode(Scru128Id.self, from: strJson.data(using: .utf8)!),
-        obj
-      )
+      XCTAssertEqual(String(data: try encoder.encode(obj), encoding: .utf8), strJson)
+      XCTAssertEqual(try decoder.decode(Scru128Id.self, from: strJson.data(using: .utf8)!), obj)
     }
   }
 }

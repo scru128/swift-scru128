@@ -8,7 +8,7 @@ public struct Scru128Id: LosslessStringConvertible {
   ///
   /// - Parameter bytes: A 16-byte byte array that represents a 128-bit unsigned integer in the
   ///                    big-endian (network) byte order.
-  /// - Precondition: The byte array must be 16-byte length.
+  /// - Precondition: The byte length of the argument must be 16.
   public init(_ bytes: [UInt8]) {
     precondition(bytes.count == 16)
     self.bytes = bytes
