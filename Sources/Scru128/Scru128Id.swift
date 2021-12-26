@@ -91,20 +91,27 @@ public struct Scru128Id: LosslessStringConvertible {
 
   /// Returns the 26-digit canonical string representation.
   public var description: String {
-    var cstr = [UInt8](repeating: 0, count: 27)
-    cstr[0] = digits[Int(bytes[0] >> 5)]
-    cstr[1] = digits[Int(bytes[0] & 31)]
+    func buildUtf8Bytes(_ bs: UnsafeMutableBufferPointer<UInt8>) -> Int {
+      bs.initialize(repeating: 0)
+      bs[0] = digits[Int(bytes[0] >> 5)]
+      bs[1] = digits[Int(bytes[0] & 31)]
 
-    // process three 40-bit (5-byte / 8-digit) groups
-    for i in 0..<3 {
-      var buffer: UInt64 = subUInt((1 + i * 5)..<(6 + i * 5))
-      for j in 0..<8 {
-        cstr[9 + i * 8 - j] = digits[Int(buffer & 31)]
-        buffer >>= 5
+      // process three 40-bit (5-byte / 8-digit) groups
+      for i in 0..<3 {
+        var buffer: UInt64 = subUInt((1 + i * 5)..<(6 + i * 5))
+        for j in 0..<8 {
+          bs[9 + i * 8 - j] = digits[Int(buffer & 31)]
+          buffer >>= 5
+        }
       }
+      return bs.count
     }
-    assert(cstr.last == 0)
-    return String(cString: cstr)
+
+    if #available(iOS 14.0, macOS 11.0, macCatalyst 14.0, tvOS 14.0, watchOS 7.0, *) {
+      return String(unsafeUninitializedCapacity: 26, initializingUTF8With: buildUtf8Bytes)
+    } else {
+      return String(cString: [UInt8](unsafeUninitializedCapacity: 27) { $1 = buildUtf8Bytes($0) })
+    }
   }
 
   /// Returns a part of `bytes` as an unsigned integer.
