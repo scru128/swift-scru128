@@ -19,11 +19,11 @@ import Scru128
 
 // generate a new identifier object
 let x = scru128()
-print(x)  // e.g. "00S6GVKR1MH58KE72EJD87SDOO"
+print(x)  // e.g. "036Z951MHJIKZIK2GSL81GR7L"
 print(x.bytes)  // as a 128-bit unsigned integer in big-endian byte array
 
 // generate a textual representation directly
-print(scru128String())  // e.g. "00S6GVKR3F7R79I72EJF0J4RGC"
+print(scru128String())  // e.g. "036Z951MHZX67T63MQ9XE6Q0J"
 ```
 
 See [SCRU128 Specification] for details.

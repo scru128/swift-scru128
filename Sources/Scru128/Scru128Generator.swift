@@ -1,25 +1,22 @@
 import Foundation
 
-/// Represents a SCRU128 ID generator that encapsulates the monotonic counter and other internal
+/// Represents a SCRU128 ID generator that encapsulates the monotonic counters and other internal
 /// states.
 public class Scru128Generator {
-  /// Timestamp at last generation.
-  private var tsLastGen: UInt64 = 0
+  private var timestamp: UInt64 = 0
+  private var counterHi: UInt32 = 0
+  private var counterLo: UInt32 = 0
 
-  /// Counter at last generation.
-  private var counter: UInt32 = 0
+  /// Timestamp at the last renewal of `counter_hi` field.
+  private var tsCounterHi: UInt64 = 0
 
-  /// Timestamp at last renewal of perSecRandom.
-  private var tsLastSec: UInt64 = 0
+  /// Random number generator used by the generator.
+  private var rng: RandomNumberGenerator
 
-  /// Per-second random value at last generation.
-  private var perSecRandom: UInt32 = 0
-
-  /// Maximum number of checking the system clock until it goes forward.
-  private let nClockCheckMax = 1_000_000
+  /// Logger object used by the generator.
+  private var logger: Scru128Logging?
 
   private let lock: NSLocking = NSLock()
-  private var rng: RandomNumberGenerator
 
   /// Creates a generator object with the default random number generator.
   public convenience init() {
@@ -43,62 +40,56 @@ public class Scru128Generator {
 
   /// Generates a new SCRU128 ID object without overhead for thread safety.
   private func generateThreadUnsafe() -> Scru128Id {
-    // update timestamp and counter
-    var tsNow = UInt64(Date().timeIntervalSince1970 * 1_000)
-    if tsNow > tsLastGen {
-      tsLastGen = tsNow
-      counter = rng.next() & maxCounter
+    let ts = UInt64(Date().timeIntervalSince1970 * 1_000)
+    if ts > timestamp {
+      timestamp = ts
+      counterLo = rng.next() & maxCounterLo
+      if ts - tsCounterHi >= 1000 {
+        tsCounterHi = ts
+        counterHi = rng.next() & maxCounterHi
+      }
     } else {
-      counter += 1
-      if counter > maxCounter {
-        logger?.info("counter limit reached; will wait until clock goes forward")
-        var nClockCheck = 0
-        while tsNow <= tsLastGen {
-          tsNow = UInt64(Date().timeIntervalSince1970 * 1_000)
-          nClockCheck += 1
-          if nClockCheck > nClockCheckMax {
-            logger?.notice("reset state as clock did not go forward")
-            tsLastSec = 0
-            break
-          }
+      counterLo += 1
+      if counterLo > maxCounterLo {
+        counterLo = 0
+        counterHi += 1
+        if counterHi > maxCounterHi {
+          counterHi = 0
+          handleCounterOverflow()
+          return generateThreadUnsafe()
         }
-
-        tsLastGen = tsNow
-        counter = rng.next() & maxCounter
       }
     }
 
-    // update perSecRandom
-    if tsLastGen - tsLastSec > 1_000 {
-      tsLastSec = tsLastGen
-      perSecRandom = rng.next() & maxPerSecRandom
-    }
+    return Scru128Id(timestamp, counterHi, counterLo, rng.next())
+  }
 
-    return Scru128Id(tsNow - timestampBias, counter, perSecRandom, rng.next())
+  /// Defines the behavior on counter overflow.
+  ///
+  /// Currently, this method busy-waits for the next clock tick and, if the clock does not move
+  /// forward for a while, reinitializes the generator state.
+  private func handleCounterOverflow() {
+    logger?.notice("counter overflowing; will wait for next clock tick")
+    tsCounterHi = 0
+    for _ in 0..<1_000_000 {
+      if UInt64(Date().timeIntervalSince1970 * 1_000) > timestamp {
+        return
+      }
+    }
+    logger?.notice("reset state as clock did not move for a while")
+    timestamp = 0
+  }
+
+  /// Specifies the logger object used by the generator.
+  ///
+  /// Logging is disabled by default. Set a logger object to enable logging.
+  public func setLogger(_ newLogger: Scru128Logging) {
+    logger = newLogger
   }
 }
 
-/// Unix time in milliseconds at 2020-01-01 00:00:00+00:00.
-private let timestampBias: UInt64 = 1_577_836_800_000
-
-/// Defines the logger interface used in the package.
+/// Defines the logger interface used by the generator.
 public protocol Scru128Logging {
-  /// Logs message at error level.
-  func error(_ message: String)
-
   /// Logs message at default level.
   func notice(_ message: String)
-
-  /// Logs message at info level.
-  func info(_ message: String)
-}
-
-/// Logger object used in the package.
-var logger: Scru128Logging? = nil
-
-/// Specifies the logger object used in the package.
-///
-/// Logging is disabled by default. Set a thread-safe logger to enable logging.
-public func setScru128Logger(_ newLogger: Scru128Logging) {
-  logger = newLogger
 }

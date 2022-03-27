@@ -2,8 +2,7 @@ import XCTest
 
 @testable import Scru128
 
-let maxUint44: UInt64 = (1 << 44) - 1
-let maxUint28: UInt32 = (1 << 28) - 1
+let maxUint48: UInt64 = (1 << 48) - 1
 let maxUint24: UInt32 = (1 << 24) - 1
 let maxUint32: UInt32 = UInt32.max
 
@@ -11,17 +10,17 @@ final class Scru128IdTests: XCTestCase {
   /// Encodes and decodes prepared cases correctly
   func testEncodeDecode() throws {
     let cases: [((UInt64, UInt32, UInt32, UInt32), String)] = [
-      ((0, 0, 0, 0), "00000000000000000000000000"),
-      ((maxUint44, 0, 0, 0), "7VVVVVVVVG0000000000000000"),
-      ((maxUint44, 0, 0, 0), "7vvvvvvvvg0000000000000000"),
-      ((0, maxUint28, 0, 0), "000000000FVVVVU00000000000"),
-      ((0, maxUint28, 0, 0), "000000000fvvvvu00000000000"),
-      ((0, 0, maxUint24, 0), "000000000000001VVVVS000000"),
-      ((0, 0, maxUint24, 0), "000000000000001vvvvs000000"),
-      ((0, 0, 0, maxUint32), "00000000000000000003VVVVVV"),
-      ((0, 0, 0, maxUint32), "00000000000000000003vvvvvv"),
-      ((maxUint44, maxUint28, maxUint24, maxUint32), "7VVVVVVVVVVVVVVVVVVVVVVVVV"),
-      ((maxUint44, maxUint28, maxUint24, maxUint32), "7vvvvvvvvvvvvvvvvvvvvvvvvv"),
+      ((0, 0, 0, 0), "0000000000000000000000000"),
+      ((maxUint48, 0, 0, 0), "F5LXX1ZZ5K6TP71GEEH2DB7K0"),
+      ((maxUint48, 0, 0, 0), "f5lxx1zz5k6tp71geeh2db7k0"),
+      ((0, maxUint24, 0, 0), "0000000005GV2R2KJWR7N8XS0"),
+      ((0, maxUint24, 0, 0), "0000000005gv2r2kjwr7n8xs0"),
+      ((0, 0, maxUint24, 0), "00000000000000JPIA7QL4HS0"),
+      ((0, 0, maxUint24, 0), "00000000000000jpia7ql4hs0"),
+      ((0, 0, 0, maxUint32), "0000000000000000001Z141Z3"),
+      ((0, 0, 0, maxUint32), "0000000000000000001z141z3"),
+      ((maxUint48, maxUint24, maxUint24, maxUint32), "F5LXX1ZZ5PNORYNQGLHZMSP33"),
+      ((maxUint48, maxUint24, maxUint24, maxUint32), "f5lxx1zz5pnorynqglhzmsp33"),
     ]
 
     for e in cases {
@@ -31,12 +30,12 @@ final class Scru128IdTests: XCTestCase {
       XCTAssertEqual(fromFields, fromString)
       XCTAssertEqual(fromFields.timestamp, e.0.0)
       XCTAssertEqual(fromString.timestamp, e.0.0)
-      XCTAssertEqual(fromFields.counter, e.0.1)
-      XCTAssertEqual(fromString.counter, e.0.1)
-      XCTAssertEqual(fromFields.perSecRandom, e.0.2)
-      XCTAssertEqual(fromString.perSecRandom, e.0.2)
-      XCTAssertEqual(fromFields.perGenRandom, e.0.3)
-      XCTAssertEqual(fromString.perGenRandom, e.0.3)
+      XCTAssertEqual(fromFields.counterHi, e.0.1)
+      XCTAssertEqual(fromString.counterHi, e.0.1)
+      XCTAssertEqual(fromFields.counterLo, e.0.2)
+      XCTAssertEqual(fromString.counterLo, e.0.2)
+      XCTAssertEqual(fromFields.entropy, e.0.3)
+      XCTAssertEqual(fromString.entropy, e.0.3)
       XCTAssertEqual(fromFields.description, e.1.uppercased())
       XCTAssertEqual(fromString.description, e.1.uppercased())
     }
@@ -46,19 +45,18 @@ final class Scru128IdTests: XCTestCase {
   func testStringValidation() throws {
     let cases = [
       "",
-      " 00SCT4FL89GQPRHN44C4LFM0OV",
-      "00SCT4FL89GQPRJN44C7SQO381 ",
-      " 00SCT4FL89GQPRLN44C4BGCIIO ",
-      "+00SCT4FL89GQPRNN44C4F3QD24",
-      "-00SCT4FL89GQPRPN44C7H4E5RC",
-      "+0SCT4FL89GQPRRN44C55Q7RVC",
-      "-0SCT4FL89GQPRTN44C6PN0A2R",
-      "00SCT4FL89WQPRVN44C41RGVMM",
-      "00SCT4FL89GQPS1N4_C54QDC5O",
-      "00SCT4-L89GQPS3N44C602O0K8",
-      "00SCT4FL89GQPS N44C7VHS5QJ",
-      "80000000000000000000000000",
-      "VVVVVVVVVVVVVVVVVVVVVVVVVV",
+      " 036Z8PUQ4TSXSIGK6O19Y164Q",
+      "036Z8PUQ54QNY1VQ3HCBRKWEB ",
+      " 036Z8PUQ54QNY1VQ3HELIVWAX ",
+      "+036Z8PUQ54QNY1VQ3HFCV3SS0",
+      "-036Z8PUQ54QNY1VQ3HHY8U1CH",
+      "+36Z8PUQ54QNY1VQ3HJQ48D9P",
+      "-36Z8PUQ5A7J0TI08OZ6ZDRDY",
+      "036Z8PUQ5A7J0T_08P2CDZ28V",
+      "036Z8PU-5A7J0TI08P3OL8OOL",
+      "036Z8PUQ5A7J0TI08P4J 6CYA",
+      "F5LXX1ZZ5PNORYNQGLHZMSP34",
+      "ZZZZZZZZZZZZZZZZZZZZZZZZZ",
     ]
 
     for e in cases {
@@ -73,11 +71,11 @@ final class Scru128IdTests: XCTestCase {
 
     var cases = [
       Scru128Id(0, 0, 0, 0),
-      Scru128Id(maxUint44, 0, 0, 0),
-      Scru128Id(0, maxUint28, 0, 0),
+      Scru128Id(maxUint48, 0, 0, 0),
+      Scru128Id(0, maxUint24, 0, 0),
       Scru128Id(0, 0, maxUint24, 0),
       Scru128Id(0, 0, 0, maxUint32),
-      Scru128Id(maxUint44, maxUint28, maxUint24, maxUint32),
+      Scru128Id(maxUint48, maxUint24, maxUint24, maxUint32),
     ]
 
     let g = Scru128Generator()
@@ -88,7 +86,7 @@ final class Scru128IdTests: XCTestCase {
     for e in cases {
       XCTAssertEqual(Scru128Id(e.description)!, e)
       XCTAssertEqual(Scru128Id(e.bytes), e)
-      XCTAssertEqual(Scru128Id(e.timestamp, e.counter, e.perSecRandom, e.perGenRandom), e)
+      XCTAssertEqual(Scru128Id(e.timestamp, e.counterHi, e.counterLo, e.entropy), e)
       XCTAssertEqual(try decoder.decode(Scru128Id.self, from: try encoder.encode(e)), e)
     }
   }
@@ -102,7 +100,7 @@ final class Scru128IdTests: XCTestCase {
       Scru128Id(0, 0, 1, 0),
       Scru128Id(0, 0, maxUint24, 0),
       Scru128Id(0, 1, 0, 0),
-      Scru128Id(0, maxUint28, 0, 0),
+      Scru128Id(0, maxUint24, 0, 0),
       Scru128Id(1, 0, 0, 0),
       Scru128Id(2, 0, 0, 0),
     ]

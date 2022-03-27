@@ -1,4 +1,4 @@
-/// Represents a SCRU128 ID and provides various converters and comparison operators.
+/// Represents a SCRU128 ID and provides converters and comparison operators.
 public struct Scru128Id: LosslessStringConvertible {
   /// Returns a 16-byte byte array containing the 128-bit unsigned integer representation in the
   /// big-endian (network) byte order.
@@ -17,71 +17,77 @@ public struct Scru128Id: LosslessStringConvertible {
   /// Creates an object from field values.
   ///
   /// - Parameters:
-  ///   - timestamp: 44-bit millisecond timestamp field value.
-  ///   - counter: 28-bit per-timestamp monotonic counter field value.
-  ///   - perSecRandom: 24-bit per-second randomness field value.
-  ///   - perGenRandom: 32-bit per-generation randomness field value.
+  ///   - timestamp: 48-bit `timestamp` field value.
+  ///   - counterHi: 24-bit `counter_hi` field value.
+  ///   - counterLo: 24-bit `counter_lo` field value.
+  ///   - entropy: 32-bit `entropy` field value.
   /// - Precondition: Each argument must be within the value range of the field.
   public init(
-    _ timestamp: UInt64, _ counter: UInt32, _ perSecRandom: UInt32, _ perGenRandom: UInt32
+    _ timestamp: UInt64, _ counterHi: UInt32, _ counterLo: UInt32, _ entropy: UInt32
   ) {
-    precondition(timestamp <= 0xFFF_FFFF_FFFF)
-    precondition(counter <= maxCounter)
-    precondition(perSecRandom <= maxPerSecRandom)
+    precondition(timestamp <= 0xffff_ffff_ffff)
+    precondition(counterHi <= maxCounterHi)
+    precondition(counterLo <= maxCounterLo)
     bytes = [
-      UInt8(truncatingIfNeeded: timestamp >> 36),
-      UInt8(truncatingIfNeeded: timestamp >> 28),
-      UInt8(truncatingIfNeeded: timestamp >> 20),
-      UInt8(truncatingIfNeeded: timestamp >> 12),
-      UInt8(truncatingIfNeeded: timestamp >> 4),
-      UInt8(truncatingIfNeeded: timestamp << 4) | UInt8(truncatingIfNeeded: counter >> 24),
-      UInt8(truncatingIfNeeded: counter >> 16),
-      UInt8(truncatingIfNeeded: counter >> 8),
-      UInt8(truncatingIfNeeded: counter),
-      UInt8(truncatingIfNeeded: perSecRandom >> 16),
-      UInt8(truncatingIfNeeded: perSecRandom >> 8),
-      UInt8(truncatingIfNeeded: perSecRandom),
-      UInt8(truncatingIfNeeded: perGenRandom >> 24),
-      UInt8(truncatingIfNeeded: perGenRandom >> 16),
-      UInt8(truncatingIfNeeded: perGenRandom >> 8),
-      UInt8(truncatingIfNeeded: perGenRandom),
+      UInt8(truncatingIfNeeded: timestamp >> 40),
+      UInt8(truncatingIfNeeded: timestamp >> 32),
+      UInt8(truncatingIfNeeded: timestamp >> 24),
+      UInt8(truncatingIfNeeded: timestamp >> 16),
+      UInt8(truncatingIfNeeded: timestamp >> 8),
+      UInt8(truncatingIfNeeded: timestamp),
+      UInt8(truncatingIfNeeded: counterHi >> 16),
+      UInt8(truncatingIfNeeded: counterHi >> 8),
+      UInt8(truncatingIfNeeded: counterHi),
+      UInt8(truncatingIfNeeded: counterLo >> 16),
+      UInt8(truncatingIfNeeded: counterLo >> 8),
+      UInt8(truncatingIfNeeded: counterLo),
+      UInt8(truncatingIfNeeded: entropy >> 24),
+      UInt8(truncatingIfNeeded: entropy >> 16),
+      UInt8(truncatingIfNeeded: entropy >> 8),
+      UInt8(truncatingIfNeeded: entropy),
     ]
   }
 
-  /// Creates an object from a 26-digit string representation.
+  /// Creates an object from a 25-digit string representation.
   public init?(_ description: String) {
     var desc = description
     if let bs: [UInt8] = desc.withUTF8({
-      if $0.count != 26 {
-        return nil
+      if $0.count != 25 {
+        return nil  // invalid length
       }
 
-      let n0 = decodeMap[Int($0[0])]
-      let n1 = decodeMap[Int($0[1])]
-      if n0 > 7 || n1 == 0xff {
-        return nil
+      var src = [UInt8](repeating: 0, count: 25)
+      for i in 0..<src.count {
+        src[i] = decodeMap[Int($0[i])]
+        if src[i] == 0xff {
+          return nil  // invalid digit
+        }
       }
 
-      var bytes = [UInt8](repeating: 0, count: 16)
-      bytes[0] = n0 << 5 | n1
+      var dst = [UInt8](repeating: 0, count: 16)
+      var minIndex = 99  // any number greater than size of output array
+      for i in stride(from: -2, to: 25, by: 9) {
+        // implement Base36 using 9-digit words
+        var carry: UInt64 = 0
+        for e in src[(i < 0 ? 0 : i)..<(i + 9)] {
+          carry = (carry * 36) + UInt64(e)
+        }
 
-      // process three 40-bit (5-byte / 8-digit) groups
-      for i in 0..<3 {
-        var buffer: UInt64 = 0
-        for j in 0..<8 {
-          let n = decodeMap[Int($0[2 + i * 8 + j])]
-          if n == 0xff {
-            return nil
+        // iterate over output array from right to left while carry != 0 but at least up to place
+        // already filled
+        var j = dst.count - 1
+        while carry > 0 || j > minIndex {
+          if j < 0 {
+            return nil  // out of 128-bit value range
           }
-          buffer <<= 5
-          buffer |= UInt64(n)
+          carry += UInt64(dst[j]) * 101_559_956_668_416  // 36^9
+          dst[j] = UInt8(truncatingIfNeeded: carry)
+          carry = carry >> 8
+          j -= 1
         }
-        for j in 0..<5 {
-          bytes[5 + i * 5 - j] = UInt8(truncatingIfNeeded: buffer)
-          buffer >>= 8
-        }
+        minIndex = j
       }
-      return bytes
+      return dst
     }) {
       bytes = bs
     } else {
@@ -89,40 +95,49 @@ public struct Scru128Id: LosslessStringConvertible {
     }
   }
 
-  /// Returns the 44-bit millisecond timestamp field value.
-  public var timestamp: UInt64 { subUInt(0..<6) >> 4 }
+  /// Returns the 48-bit `timestamp` field value.
+  public var timestamp: UInt64 { subUInt(0..<6) }
 
-  /// Returns the 28-bit per-timestamp monotonic counter field value.
-  public var counter: UInt32 { subUInt(5..<9) & maxCounter }
+  /// Returns the 24-bit `counter_hi` field value.
+  public var counterHi: UInt32 { subUInt(6..<9) }
 
-  /// Returns the 24-bit per-second randomness field value.
-  public var perSecRandom: UInt32 { subUInt(9..<12) }
+  /// Returns the 24-bit `counter_lo` field value.
+  public var counterLo: UInt32 { subUInt(9..<12) }
 
-  /// Returns the 32-bit per-generation randomness field value.
-  public var perGenRandom: UInt32 { subUInt(12..<16) }
+  /// Returns the 32-bit `entropy` field value.
+  public var entropy: UInt32 { subUInt(12..<16) }
 
-  /// Returns the 26-digit canonical string representation.
+  /// Returns the 25-digit canonical string representation.
   public var description: String {
-    func buildUtf8Bytes(_ bs: UnsafeMutableBufferPointer<UInt8>) -> Int {
-      bs.initialize(repeating: 0)
-      bs[0] = digits[Int(bytes[0] >> 5)]
-      bs[1] = digits[Int(bytes[0] & 31)]
+    func buildUtf8Bytes(_ dst: UnsafeMutableBufferPointer<UInt8>) -> Int {
+      dst.initialize(repeating: 0)
+      var minIndex = 99  // any number greater than size of output array
+      for i in stride(from: -2, to: 16, by: 6) {
+        // implement Base36 using 48-bit words
+        var carry: UInt64 = subUInt((i < 0 ? 0 : i)..<(i + 6))
 
-      // process three 40-bit (5-byte / 8-digit) groups
-      for i in 0..<3 {
-        var buffer: UInt64 = subUInt((1 + i * 5)..<(6 + i * 5))
-        for j in 0..<8 {
-          bs[9 + i * 8 - j] = digits[Int(buffer & 31)]
-          buffer >>= 5
+        // iterate over output array from right to left while carry != 0 but at least up to place
+        // already filled
+        var j = 24
+        while carry > 0 || j > minIndex {
+          carry += UInt64(dst[j]) << 48
+          dst[j] = UInt8(truncatingIfNeeded: carry % 36)
+          carry = carry / 36
+          j -= 1
         }
+        minIndex = j
       }
-      return bs.count
+
+      for i in 0..<25 {
+        dst[i] = digits[Int(dst[i])]
+      }
+      return dst.count
     }
 
     if #available(iOS 14.0, macOS 11.0, macCatalyst 14.0, tvOS 14.0, watchOS 7.0, *) {
-      return String(unsafeUninitializedCapacity: 26, initializingUTF8With: buildUtf8Bytes)
+      return String(unsafeUninitializedCapacity: 25, initializingUTF8With: buildUtf8Bytes)
     } else {
-      return String(cString: [UInt8](unsafeUninitializedCapacity: 27) { $1 = buildUtf8Bytes($0) })
+      return String(cString: [UInt8](unsafeUninitializedCapacity: 26) { $1 = buildUtf8Bytes($0) })
     }
   }
 
@@ -130,26 +145,25 @@ public struct Scru128Id: LosslessStringConvertible {
   private func subUInt<T: UnsignedInteger>(_ range: Range<Int>) -> T {
     var buffer: T = 0
     for e in bytes[range] {
-      buffer <<= 8
-      buffer |= T(e)
+      buffer = (buffer << 8) | T(e)
     }
     return buffer
   }
 }
 
-/// Digit characters used in the base 32 notation.
-private let digits = [UInt8]("0123456789ABCDEFGHIJKLMNOPQRSTUV".utf8)
+/// Digit characters used in the Base36 notation.
+private let digits = [UInt8]("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".utf8)
 
-/// O(1) map from ASCII code points to base 32 digit values.
+/// O(1) map from ASCII code points to Base36 digit values.
 private let decodeMap: [UInt8] = [
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
   0xff, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
-  0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+  0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0xff, 0xff, 0xff, 0xff, 0xff,
   0xff, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
-  0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+  0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0xff, 0xff, 0xff, 0xff, 0xff,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -176,13 +190,13 @@ extension Scru128Id: Comparable, Hashable {
 }
 
 extension Scru128Id: Codable {
-  /// Encodes the object as a 26-digit canonical string representation.
+  /// Encodes the object as a 25-digit canonical string representation.
   public func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
     try container.encode(description)
   }
 
-  /// Decodes the object from a 26-digit canonical string representation.
+  /// Decodes the object from a 25-digit canonical string representation.
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
     self.init(try container.decode(String.self))!
