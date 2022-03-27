@@ -66,12 +66,13 @@ public class Scru128Generator {
 
   /// Defines the behavior on counter overflow.
   ///
-  /// Currently, this method busy-waits for the next clock tick and, if the clock does not move
-  /// forward for a while, reinitializes the generator state.
+  /// Currently, this method waits for the next clock tick and, if the clock does not move forward
+  /// for a while, reinitializes the generator state.
   private func handleCounterOverflow() {
     logger?.notice("counter overflowing; will wait for next clock tick")
     tsCounterHi = 0
-    for _ in 0..<1_000_000 {
+    for _ in 0..<10_000 {
+      Thread.sleep(forTimeInterval: 0.0001)  // 100 microseconds
       if UInt64(Date().timeIntervalSince1970 * 1_000) > timestamp {
         return
       }
