@@ -35,11 +35,20 @@ public class Scru128Generator {
   public func generate() -> Scru128Id {
     lock.lock()
     defer { lock.unlock() }
-    return generateThreadUnsafe()
+    while true {
+      do {
+        return try generateCore()
+      } catch is CounterOverflowError {
+        handleCounterOverflow()
+      } catch {
+        fatalError("unexpected error")
+      }
+    }
   }
 
-  /// Generates a new SCRU128 ID object without overhead for thread safety.
-  private func generateThreadUnsafe() -> Scru128Id {
+  /// Generates a new SCRU128 ID object, while delegating the caller to take care of thread safety
+  /// and counter overflows.
+  private func generateCore() throws -> Scru128Id {
     let ts = UInt64(Date().timeIntervalSince1970 * 1_000)
     if ts > timestamp {
       timestamp = ts
@@ -55,8 +64,7 @@ public class Scru128Generator {
         counterHi += 1
         if counterHi > maxCounterHi {
           counterHi = 0
-          handleCounterOverflow()
-          return generateThreadUnsafe()
+          throw CounterOverflowError()
         }
       }
     }
@@ -94,3 +102,6 @@ public protocol Scru128Logging {
   /// Logs message at default level.
   func notice(_ message: String)
 }
+
+/// Error thrown when the monotonic counters can no more be incremented.
+private struct CounterOverflowError: Error {}
