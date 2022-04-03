@@ -66,10 +66,10 @@ public struct Scru128Id: LosslessStringConvertible {
 
       var dst = [UInt8](repeating: 0, count: 16)
       var minIndex = 99  // any number greater than size of output array
-      for i in stride(from: -2, to: 25, by: 9) {
-        // implement Base36 using 9-digit words
+      for i in stride(from: -5, to: 25, by: 10) {
+        // implement Base36 using 10-digit words
         var carry: UInt64 = 0
-        for e in src[(i < 0 ? 0 : i)..<(i + 9)] {
+        for e in src[(i < 0 ? 0 : i)..<(i + 10)] {
           carry = (carry * 36) + UInt64(e)
         }
 
@@ -80,7 +80,7 @@ public struct Scru128Id: LosslessStringConvertible {
           if j < 0 {
             return nil  // out of 128-bit value range
           }
-          carry += UInt64(dst[j]) * 101_559_956_668_416  // 36^9
+          carry += UInt64(dst[j]) * 3_656_158_440_062_976  // 36^10
           dst[j] = UInt8(truncatingIfNeeded: carry)
           carry = carry >> 8
           j -= 1
@@ -112,15 +112,15 @@ public struct Scru128Id: LosslessStringConvertible {
     func buildUtf8Bytes(_ dst: UnsafeMutableBufferPointer<UInt8>) -> Int {
       dst.initialize(repeating: 0)
       var minIndex = 99  // any number greater than size of output array
-      for i in stride(from: -2, to: 16, by: 6) {
-        // implement Base36 using 48-bit words
-        var carry: UInt64 = subUInt((i < 0 ? 0 : i)..<(i + 6))
+      for i in stride(from: -5, to: 16, by: 7) {
+        // implement Base36 using 56-bit words
+        var carry: UInt64 = subUInt((i < 0 ? 0 : i)..<(i + 7))
 
         // iterate over output array from right to left while carry != 0 but at least up to place
         // already filled
         var j = 24
         while carry > 0 || j > minIndex {
-          carry += UInt64(dst[j]) << 48
+          carry += UInt64(dst[j]) << 56
           dst[j] = UInt8(truncatingIfNeeded: carry % 36)
           carry = carry / 36
           j -= 1
