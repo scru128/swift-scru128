@@ -5,10 +5,10 @@ import XCTest
 final class Scru128Tests: XCTestCase {
   static let samples: [String] = (0..<100_000).map { _ in scru128String() }
 
-  /// Generates 26-digit canonical string
+  /// Generates 25-digit canonical string
   func testFormat() throws {
     for e in Self.samples {
-      XCTAssertNotNil(e.range(of: "^[0-7][0-9A-V]{25}$", options: .regularExpression))
+      XCTAssertNotNil(e.range(of: "^[0-9A-Z]{25}$", options: .regularExpression))
     }
   }
 
@@ -29,26 +29,28 @@ final class Scru128Tests: XCTestCase {
   func testTimestamp() throws {
     let g = Scru128Generator()
     for _ in 0..<10_000 {
-      let tsNow = Int64(Date().timeIntervalSince1970 * 1_000) - 1_577_836_800_000
+      let tsNow = Int64(Date().timeIntervalSince1970 * 1_000)
       let timestamp = Int64(g.generate().timestamp)
       XCTAssertLessThan(abs(tsNow - timestamp), 16)
     }
   }
 
-  /// Encodes unique sortable pair of timestamp and counter
-  func testTimestampAndCounter() throws {
+  /// Encodes unique sortable tuple of timestamp and counters
+  func testTimestampAndCounters() throws {
     var prev = Scru128Id(Self.samples[0])!
     for i in 1..<Self.samples.count {
       let curr = Scru128Id(Self.samples[i])!
       XCTAssertTrue(
         prev.timestamp < curr.timestamp
-          || (prev.timestamp == curr.timestamp && prev.counter < curr.counter)
+          || (prev.timestamp == curr.timestamp && prev.counterHi < curr.counterHi)
+          || (prev.timestamp == curr.timestamp && prev.counterHi == curr.counterHi
+            && prev.counterLo < curr.counterLo)
       )
       prev = curr
     }
   }
 
-  /// Generates no IDs sharing same timestamp and counter under multithreading
+  /// Generates no IDs sharing same timestamp and counters under multithreading
   func testThreading() throws {
     var results: [Scru128Id] = []
     let resultsQueue = DispatchQueue(label: "serial queue to protect array")
@@ -62,7 +64,7 @@ final class Scru128Tests: XCTestCase {
     }
     group.wait()
 
-    let set = Set<String>(results.map { "\($0.timestamp)-\($0.counter)" })
+    let set = Set<String>(results.map { "\($0.timestamp)-\($0.counterHi)-\($0.counterLo)" })
     XCTAssertEqual(set.count, results.count)
   }
 }
