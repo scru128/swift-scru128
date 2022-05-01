@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v2.0.0 - 2022-05-01
 
 ### Changed
 
@@ -22,4 +22,4 @@
 
 ## v1.0.0 - 2022-01-03
 
-- Initial stable release.
+- Initial stable release
