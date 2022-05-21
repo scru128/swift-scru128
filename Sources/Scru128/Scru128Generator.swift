@@ -10,6 +10,25 @@ public class Scru128Generator {
   /// Timestamp at the last renewal of `counter_hi` field.
   private var tsCounterHi: UInt64 = 0
 
+  /// ``Status`` code that indicates the internal state involved in the last generation of ID.
+  ///
+  /// Note that the generator object should be protected from concurrent accesses during the
+  /// sequential calls to a generation method and this property to avoid race conditions.
+  ///
+  /// Examples:
+  ///
+  /// ```swift
+  /// let g = Scru128Generator()
+  /// let x = g.generate()
+  /// let y = g.generate()
+  /// precondition(
+  ///   g.lastStatus != Scru128Generator.Status.clockRollback,
+  ///   "clock moved backward"
+  /// )
+  /// assert(x < y)
+  /// ```
+  private(set) public var lastStatus: Status = Status.notExecuted
+
   /// Random number generator used by the generator.
   private var rng: RandomNumberGenerator
 
@@ -32,7 +51,7 @@ public class Scru128Generator {
   public func generate() -> Scru128Id {
     lock.lock()
     defer { lock.unlock() }
-    return generateCore(UInt64(Date().timeIntervalSince1970 * 1_000)).0
+    return generateCore(UInt64(Date().timeIntervalSince1970 * 1_000))
   }
 
   /// Generates a new SCRU128 ID object with the `timestamp` passed.
@@ -41,29 +60,27 @@ public class Scru128Generator {
   /// protected from concurrent accesses using a mutex or other synchronization mechanism to avoid
   /// race conditions.
   ///
-  /// This method returns a generated ID and a ``Status`` code that indicates the internal state
-  /// involved in the generation. Callers can usually ignore the status unless the monotonic order
-  /// of generated IDs is critically important.
-  public func generateCore(_ timestamp: UInt64) -> (Scru128Id, Status) {
+  /// - Precondition: The argument must be a 48-bit unsigned integer.
+  public func generateCore(_ timestamp: UInt64) -> Scru128Id {
     precondition(timestamp <= maxTimestamp)
 
-    var status = Status.newTimestamp
+    lastStatus = Status.newTimestamp
     if timestamp > self.timestamp {
       self.timestamp = timestamp
       counterLo = rng.next() & maxCounterLo
     } else if timestamp + 10_000 > self.timestamp {
       counterLo += 1
-      status = Status.counterLoInc
+      lastStatus = Status.counterLoInc
       if counterLo > maxCounterLo {
         counterLo = 0
         counterHi += 1
-        status = Status.counterHiInc
+        lastStatus = Status.counterHiInc
         if counterHi > maxCounterHi {
           counterHi = 0
           // increment timestamp at counter overflow
           self.timestamp += 1
           counterLo = rng.next() & maxCounterLo
-          status = Status.timestampInc
+          lastStatus = Status.timestampInc
         }
       }
     } else {
@@ -71,7 +88,7 @@ public class Scru128Generator {
       tsCounterHi = 0
       self.timestamp = timestamp
       counterLo = rng.next() & maxCounterLo
-      status = Status.clockRollback
+      lastStatus = Status.clockRollback
     }
 
     if self.timestamp - tsCounterHi >= 1_000 {
@@ -79,16 +96,18 @@ public class Scru128Generator {
       counterHi = rng.next() & maxCounterHi
     }
 
-    return (Scru128Id(self.timestamp, counterHi, counterLo, rng.next()), status)
+    return Scru128Id(self.timestamp, counterHi, counterLo, rng.next())
   }
 
-  /// Status code reported by ``generateCore(_:)`` method.
+  /// Status code returned by ``lastStatus`` property.
   public enum Status {
-    /// Indicates that the `timestamp` passed was used because it was greater than the previous
-    /// one.
+    /// Indicates that the generator has yet to generate an ID.
+    case notExecuted
+
+    /// Indicates that the latest `timestamp` was used because it was greater than the previous one.
     case newTimestamp
 
-    /// Indicates that `counter_lo` was incremented because the `timestamp` passed was no greater
+    /// Indicates that `counter_lo` was incremented because the latest `timestamp` was no greater
     /// than the previous one.
     case counterLoInc
 
@@ -99,8 +118,8 @@ public class Scru128Generator {
     /// maximum value.
     case timestampInc
 
-    /// Indicates that the monotonic order of generated IDs was broken because the `timestamp`
-    /// passed was less than the previous one by ten seconds or more.
+    /// Indicates that the monotonic order of generated IDs was broken because the latest
+    /// `timestamp` was less than the previous one by ten seconds or more.
     case clockRollback
   }
 }
