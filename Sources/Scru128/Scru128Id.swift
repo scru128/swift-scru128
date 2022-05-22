@@ -25,7 +25,7 @@ public struct Scru128Id: LosslessStringConvertible {
   public init(
     _ timestamp: UInt64, _ counterHi: UInt32, _ counterLo: UInt32, _ entropy: UInt32
   ) {
-    precondition(timestamp <= 0xffff_ffff_ffff)
+    precondition(timestamp <= maxTimestamp)
     precondition(counterHi <= maxCounterHi)
     precondition(counterLo <= maxCounterLo)
     bytes = [
