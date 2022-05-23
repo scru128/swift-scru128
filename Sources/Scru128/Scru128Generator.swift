@@ -60,9 +60,9 @@ public class Scru128Generator {
   /// protected from concurrent accesses using a mutex or other synchronization mechanism to avoid
   /// race conditions.
   ///
-  /// - Precondition: The argument must be a 48-bit unsigned integer.
+  /// - Precondition: The argument must be a 48-bit positive integer.
   public func generateCore(_ timestamp: UInt64) -> Scru128Id {
-    precondition(timestamp <= maxTimestamp)
+    precondition(timestamp != 0 && timestamp <= maxTimestamp)
 
     lastStatus = Status.newTimestamp
     if timestamp > self.timestamp {
