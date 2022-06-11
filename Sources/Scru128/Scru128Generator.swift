@@ -91,7 +91,7 @@ public class Scru128Generator {
       lastStatus = Status.clockRollback
     }
 
-    if self.timestamp - tsCounterHi >= 1_000 {
+    if self.timestamp - tsCounterHi >= 1_000 || tsCounterHi == 0 {
       tsCounterHi = self.timestamp
       counterHi = rng.next() & maxCounterHi
     }
