@@ -123,3 +123,13 @@ public class Scru128Generator {
     case clockRollback
   }
 }
+
+extension Scru128Generator: IteratorProtocol, Sequence {
+  /// Returns a new SCRU128 ID object for each call, infinitely.
+  ///
+  /// This method is a synonym for ``generate()`` to use `self` as an infinite iterator that
+  /// produces a new ID for each call of `next()`.
+  public func next() -> Scru128Id? {
+    return generate()
+  }
+}
