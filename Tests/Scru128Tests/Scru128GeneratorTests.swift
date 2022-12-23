@@ -40,4 +40,17 @@ final class Scru128GeneratorTests: XCTestCase {
     XCTAssertGreaterThan(prev, curr)
     XCTAssertEqual(curr.timestamp, ts - 10_000)
   }
+
+  /// Is iterable with for-in loop
+  func testSequenceImplementation() throws {
+    var i = 0
+    for e in Scru128Generator() {
+      XCTAssertGreaterThan(e.timestamp, 0)
+      i += 1
+      if i > 100 {
+        break
+      }
+    }
+    XCTAssertEqual(i, 101)
+  }
 }
