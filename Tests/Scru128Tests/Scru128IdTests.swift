@@ -146,4 +146,23 @@ final class Scru128IdTests: XCTestCase {
       XCTAssertEqual(try decoder.decode(Scru128Id.self, from: strJson.data(using: .utf8)!), obj)
     }
   }
+
+  /// Decodes an object from string and binary representations
+  func testDecodable() throws {
+    let encoder = JSONEncoder()
+    let decoder = JSONDecoder()
+
+    let g = Scru128Generator()
+    for _ in 0..<1_000 {
+      let obj = g.generate()
+      let desc = obj.description
+      let asStr = try encoder.encode(desc)
+      let asBytes = try encoder.encode(obj.bytes)
+      let asStrBytes = try encoder.encode([UInt8](desc.utf8))
+
+      XCTAssertEqual(try decoder.decode(Scru128Id.self, from: asStr), obj)
+      XCTAssertEqual(try decoder.decode(Scru128Id.self, from: asBytes), obj)
+      XCTAssertEqual(try decoder.decode(Scru128Id.self, from: asStrBytes), obj)
+    }
+  }
 }
