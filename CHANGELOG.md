@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.3.0 - unreleased
+
+### Fixed
+
+- `Decodable` implementation of `Scru128Id` to throw error on failure instead of
+  raising runtime panic
+
 ## v2.2.0 - 2022-12-23
 
 ### Added

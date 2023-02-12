@@ -50,8 +50,16 @@ public struct Scru128Id: LosslessStringConvertible {
 
   /// Creates an object from a 25-digit string representation.
   public init?(_ description: String) {
+    guard let bs = Self.parse(description) else {
+      return nil
+    }
+    bytes = bs
+  }
+
+  /// Builds the 16-byte big-endian byte array representation from a string.
+  private static func parse(_ description: String) -> [UInt8]? {
     var desc = description
-    if let bs: [UInt8] = desc.withUTF8({
+    return desc.withUTF8 {
       if $0.count != 25 {
         return nil  // invalid length
       }
@@ -88,10 +96,6 @@ public struct Scru128Id: LosslessStringConvertible {
         minIndex = j
       }
       return dst
-    }) {
-      bytes = bs
-    } else {
-      return nil
     }
   }
 
@@ -199,6 +203,11 @@ extension Scru128Id: Codable {
   /// Decodes the object from a 25-digit canonical string representation.
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
-    self.init(try container.decode(String.self))!
+    if let bs = Self.parse(try container.decode(String.self)) {
+      bytes = bs
+    } else {
+      throw DecodingError.dataCorruptedError(
+        in: container, debugDescription: "could not parse string as Scru128Id")
+    }
   }
 }
