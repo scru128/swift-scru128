@@ -7,6 +7,10 @@
 - `Decodable` implementation of `Scru128Id` to throw error on failure instead of
   raising runtime panic
 
+### Changed
+
+- `Decodable` behavior so it tries to parse byte array as well as string
+
 ## v2.2.0 - 2022-12-23
 
 ### Added
