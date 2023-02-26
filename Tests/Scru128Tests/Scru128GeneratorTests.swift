@@ -7,18 +7,18 @@ final class Scru128GeneratorGenerateCoreTests: XCTestCase {
   func testDecreasingOrConstantTimestamp() throws {
     let ts: UInt64 = 0x0123_4567_89ab
     let g = Scru128Generator()
-    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.notExecuted)
+    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.notExecuted)
 
     var prev = g.generateCore(ts)
-    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
+    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
     for i in UInt64(0)..<100_000 {
       let curr = g.generateCore(ts - min(9_998, i))
       XCTAssertTrue(
-        g.lastStatus == Scru128Generator.Status.counterLoInc
-          || g.lastStatus == Scru128Generator.Status.counterHiInc
-          || g.lastStatus == Scru128Generator.Status.timestampInc)
+        g.lastStatusInternal == Scru128Generator.Status.counterLoInc
+          || g.lastStatusInternal == Scru128Generator.Status.counterHiInc
+          || g.lastStatusInternal == Scru128Generator.Status.timestampInc)
       XCTAssertLessThan(prev, curr)
       prev = curr
     }
@@ -29,23 +29,23 @@ final class Scru128GeneratorGenerateCoreTests: XCTestCase {
   func testTimestampRollback() throws {
     let ts: UInt64 = 0x0123_4567_89ab
     let g = Scru128Generator()
-    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.notExecuted)
+    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.notExecuted)
 
     var prev = g.generateCore(ts)
-    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
+    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
     var curr = g.generateCore(ts - 10_000)
-    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.clockRollback)
+    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.clockRollback)
     XCTAssertGreaterThan(prev, curr)
     XCTAssertEqual(curr.timestamp, ts - 10_000)
 
     prev = curr
     curr = g.generateCore(ts - 10_001)
     XCTAssertTrue(
-      g.lastStatus == Scru128Generator.Status.counterLoInc
-        || g.lastStatus == Scru128Generator.Status.counterHiInc
-        || g.lastStatus == Scru128Generator.Status.timestampInc)
+      g.lastStatusInternal == Scru128Generator.Status.counterLoInc
+        || g.lastStatusInternal == Scru128Generator.Status.counterHiInc
+        || g.lastStatusInternal == Scru128Generator.Status.timestampInc)
     XCTAssertLessThan(prev, curr)
   }
 }
@@ -55,18 +55,18 @@ final class Scru128GeneratorGenerateCoreMonotonicTests: XCTestCase {
   func testDecreasingOrConstantTimestamp() throws {
     let ts: UInt64 = 0x0123_4567_89ab
     let g = Scru128Generator()
-    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.notExecuted)
+    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.notExecuted)
 
     var prev = g.generateCoreMonotonic(ts)!
-    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
+    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
     for i in UInt64(0)..<100_000 {
       let curr = g.generateCoreMonotonic(ts - min(9_998, i))!
       XCTAssertTrue(
-        g.lastStatus == Scru128Generator.Status.counterLoInc
-          || g.lastStatus == Scru128Generator.Status.counterHiInc
-          || g.lastStatus == Scru128Generator.Status.timestampInc)
+        g.lastStatusInternal == Scru128Generator.Status.counterLoInc
+          || g.lastStatusInternal == Scru128Generator.Status.counterHiInc
+          || g.lastStatusInternal == Scru128Generator.Status.timestampInc)
       XCTAssertLessThan(prev, curr)
       prev = curr
     }
@@ -77,19 +77,19 @@ final class Scru128GeneratorGenerateCoreMonotonicTests: XCTestCase {
   func testTimestampRollback() throws {
     let ts: UInt64 = 0x0123_4567_89ab
     let g = Scru128Generator()
-    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.notExecuted)
+    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.notExecuted)
 
     let prev = g.generateCoreMonotonic(ts)!
-    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
+    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
     var curr = g.generateCoreMonotonic(ts - 10_000)
     XCTAssertNil(curr)
-    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
+    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
 
     curr = g.generateCoreMonotonic(ts - 10_001)
     XCTAssertNil(curr)
-    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
+    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
   }
 }
 

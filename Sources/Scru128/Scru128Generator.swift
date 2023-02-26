@@ -14,20 +14,11 @@ public class Scru128Generator {
   ///
   /// Note that the generator object should be protected from concurrent accesses during the
   /// sequential calls to a generation method and this property to avoid race conditions.
-  ///
-  /// Examples:
-  ///
-  /// ```swift
-  /// let g = Scru128Generator()
-  /// let x = g.generate()
-  /// let y = g.generate()
-  /// precondition(
-  ///   g.lastStatus != Scru128Generator.Status.clockRollback,
-  ///   "clock moved backward"
-  /// )
-  /// assert(x < y)
-  /// ```
-  private(set) public var lastStatus: Status = Status.notExecuted
+  @available(*, deprecated, message: "Use `generateMonotonic()` to guarantee monotonicity.")
+  public var lastStatus: Status { lastStatusInternal }
+
+  /// For internal use to supress deprecation warnings
+  internal var lastStatusInternal: Status = Status.notExecuted
 
   /// Random number generator used by the generator.
   private var rng: RandomNumberGenerator
@@ -94,7 +85,7 @@ public class Scru128Generator {
       self.timestamp = 0
       tsCounterHi = 0
       let value = generateCoreMonotonic(timestamp)!
-      lastStatus = Status.clockRollback
+      lastStatusInternal = Status.clockRollback
       return value
     }
   }
@@ -120,21 +111,21 @@ public class Scru128Generator {
     if timestamp > self.timestamp {
       self.timestamp = timestamp
       counterLo = rng.next() & maxCounterLo
-      lastStatus = Status.newTimestamp
+      lastStatusInternal = Status.newTimestamp
     } else if timestamp + rollbackAllowance > self.timestamp {
       // go on with previous timestamp if new one is not much smaller
       counterLo += 1
-      lastStatus = Status.counterLoInc
+      lastStatusInternal = Status.counterLoInc
       if counterLo > maxCounterLo {
         counterLo = 0
         counterHi += 1
-        lastStatus = Status.counterHiInc
+        lastStatusInternal = Status.counterHiInc
         if counterHi > maxCounterHi {
           counterHi = 0
           // increment timestamp at counter overflow
           self.timestamp += 1
           counterLo = rng.next() & maxCounterLo
-          lastStatus = Status.timestampInc
+          lastStatusInternal = Status.timestampInc
         }
       }
     } else {
@@ -150,7 +141,7 @@ public class Scru128Generator {
     return Scru128Id(self.timestamp, counterHi, counterLo, rng.next())
   }
 
-  /// Status code returned by ``lastStatus`` property.
+  /// _Deprecated_. Status code returned by ``lastStatus`` property.
   public enum Status {
     /// Indicates that the generator has yet to generate an ID.
     case notExecuted
