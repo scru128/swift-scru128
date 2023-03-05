@@ -50,19 +50,19 @@ final class Scru128GeneratorGenerateCoreTests: XCTestCase {
   }
 }
 
-final class Scru128GeneratorGenerateCoreMonotonicTests: XCTestCase {
+final class Scru128GeneratorGenerateCoreNoRewindTests: XCTestCase {
   /// Generates increasing IDs even with decreasing or constant timestamp
   func testDecreasingOrConstantTimestamp() throws {
     let ts: UInt64 = 0x0123_4567_89ab
     let g = Scru128Generator()
     XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.notExecuted)
 
-    var prev = g.generateCoreMonotonic(ts)!
+    var prev = g.generateCoreNoRewind(ts)!
     XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
     for i in UInt64(0)..<100_000 {
-      let curr = g.generateCoreMonotonic(ts - min(9_998, i))!
+      let curr = g.generateCoreNoRewind(ts - min(9_998, i))!
       XCTAssertTrue(
         g.lastStatusInternal == Scru128Generator.Status.counterLoInc
           || g.lastStatusInternal == Scru128Generator.Status.counterHiInc
@@ -79,15 +79,15 @@ final class Scru128GeneratorGenerateCoreMonotonicTests: XCTestCase {
     let g = Scru128Generator()
     XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.notExecuted)
 
-    let prev = g.generateCoreMonotonic(ts)!
+    let prev = g.generateCoreNoRewind(ts)!
     XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
-    var curr = g.generateCoreMonotonic(ts - 10_000)
+    var curr = g.generateCoreNoRewind(ts - 10_000)
     XCTAssertNil(curr)
     XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
 
-    curr = g.generateCoreMonotonic(ts - 10_001)
+    curr = g.generateCoreNoRewind(ts - 10_001)
     XCTAssertNil(curr)
     XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
   }
