@@ -2,6 +2,21 @@ import Foundation
 
 /// Represents a SCRU128 ID generator that encapsulates the monotonic counters and other internal
 /// states.
+///
+/// The generator offers four different methods to generate a SCRU128 ID:
+///
+/// | Flavor                       | Timestamp | Thread- | On big clock rewind |
+/// | ---------------------------- | --------- | ------- | ------------------- |
+/// | ``generate()``               | Now       | Safe    | Rewinds state       |
+/// | ``generateNoRewind()``       | Now       | Safe    | Returns `nil`       |
+/// | ``generateCore(_:)``         | Argument  | Unsafe  | Rewinds state       |
+/// | ``generateCoreNoRewind(_:)`` | Argument  | Unsafe  | Returns `nil`       |
+///
+/// Each method returns monotonically increasing IDs unless a `timestamp` provided is significantly
+/// (by ten seconds or more) smaller than the one embedded in the immediately preceding ID. If such
+/// a significant clock rollback is detected, the standard `generate` rewinds the generator state
+/// and returns a new ID based on the current `timestamp`, whereas `NoRewind` variants keep the
+/// state untouched and return `nil`. `Core` functions offer low-level thread-unsafe primitives.
 public class Scru128Generator {
   private var timestamp: UInt64 = 0
   private var counterHi: UInt32 = 0
@@ -38,12 +53,7 @@ public class Scru128Generator {
 
   /// Generates a new SCRU128 ID object from the current `timestamp`.
   ///
-  /// This method returns monotonically increasing IDs unless the up-to-date `timestamp` is
-  /// significantly (by ten seconds or more) smaller than the one embedded in the immediately
-  /// preceding ID. If such a significant clock rollback is detected, this method rewinds the
-  /// generator state and returns a new ID based on the up-to-date `timestamp`.
-  ///
-  /// This method is thread-safe; multiple threads can call it concurrently.
+  /// See the ``Scru128Generator`` class documentation for the description.
   public func generate() -> Scru128Id {
     lock.lock()
     defer { lock.unlock() }
@@ -53,12 +63,7 @@ public class Scru128Generator {
   /// Generates a new SCRU128 ID object from the current `timestamp`, guaranteeing the monotonic
   /// order of generated IDs despite a significant timestamp rollback.
   ///
-  /// This method returns monotonically increasing IDs unless the up-to-date `timestamp` is
-  /// significantly (by ten seconds or more) smaller than the one embedded in the immediately
-  /// preceding ID. If such a significant clock rollback is detected, this method returns `nil` and
-  /// keeps the generator state untouched.
-  ///
-  /// This method is thread-safe; multiple threads can call it concurrently.
+  /// See the ``Scru128Generator`` class documentation for the description.
   public func generateNoRewind() -> Scru128Id? {
     lock.lock()
     defer { lock.unlock() }
@@ -67,10 +72,7 @@ public class Scru128Generator {
 
   /// Generates a new SCRU128 ID object from the `timestamp` passed.
   ///
-  /// This method returns monotonically increasing IDs unless a given `timestamp` is significantly
-  /// (by ten seconds or more) smaller than the one embedded in the immediately preceding ID. If
-  /// such a significant clock rollback is detected, this method rewinds the generator state and
-  /// returns a new ID based on the given argument.
+  /// See the ``Scru128Generator`` class documentation for the description.
   ///
   /// Unlike ``generate()``, this method is NOT thread-safe. The generator object should be
   /// protected from concurrent accesses using a mutex or other synchronization mechanism to avoid
@@ -93,10 +95,7 @@ public class Scru128Generator {
   /// Generates a new SCRU128 ID object from the `timestamp` passed, guaranteeing the monotonic
   /// order of generated IDs despite a significant timestamp rollback.
   ///
-  /// This method returns monotonically increasing IDs unless a given `timestamp` is significantly
-  /// (by ten seconds or more) smaller than the one embedded in the immediately preceding ID. If
-  /// such a significant clock rollback is detected, this method returns `nil` and keeps the
-  /// generator state untouched.
+  /// See the ``Scru128Generator`` class documentation for the description.
   ///
   /// Unlike ``generateNoRewind()``, this method is NOT thread-safe. The generator object should be
   /// protected from concurrent accesses using a mutex or other synchronization mechanism to avoid
