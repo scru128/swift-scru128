@@ -213,16 +213,16 @@ extension Scru128Id: Codable {
     } else if let byteArray = try? container.decode([UInt8].self) {
       if byteArray.count == 16 {
         self.init(byteArray)
-      } else {
-        guard let strValue = String(bytes: byteArray, encoding: .utf8) else {
-          throw DecodingError.dataCorruptedError(
-            in: container, debugDescription: "could not parse byte array as Scru128Id")
-        }
+      } else if byteArray.allSatisfy({ $0 < 0x80 }) {
+        let strValue = String(cString: byteArray + [0])
         guard let bs = Self.parse(strValue) else {
           throw DecodingError.dataCorruptedError(
             in: container, debugDescription: "could not parse byte array as Scru128Id")
         }
         self.init(bs)
+      } else {
+        throw DecodingError.dataCorruptedError(
+          in: container, debugDescription: "could not parse byte array as Scru128Id")
       }
     } else {
       throw DecodingError.dataCorruptedError(
