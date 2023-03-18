@@ -1,22 +1,26 @@
 import Foundation
 
+/// The default timestamp rollback allowance.
+let defaultRollbackAllowance: UInt64 = 10_000  // 10 seconds
+
 /// Represents a SCRU128 ID generator that encapsulates the monotonic counters and other internal
 /// states.
 ///
 /// The generator offers four different methods to generate a SCRU128 ID:
 ///
-/// | Flavor                       | Timestamp | Thread- | On big clock rewind |
-/// | ---------------------------- | --------- | ------- | ------------------- |
-/// | ``generate()``               | Now       | Safe    | Rewinds state       |
-/// | ``generateNoRewind()``       | Now       | Safe    | Returns `nil`       |
-/// | ``generateCore(_:)``         | Argument  | Unsafe  | Rewinds state       |
-/// | ``generateCoreNoRewind(_:)`` | Argument  | Unsafe  | Returns `nil`       |
+/// | Flavor                                                 | Timestamp | Thread- | On big clock rewind |
+/// | ------------------------------------------------------ | --------- | ------- | ------------------- |
+/// | ``generate()``                                         | Now       | Safe    | Rewinds state       |
+/// | ``generateNoRewind()``                                 | Now       | Safe    | Returns `nil`       |
+/// | ``generateCore(timestamp:rollbackAllowance:)``         | Argument  | Unsafe  | Rewinds state       |
+/// | ``generateCoreNoRewind(timestamp:rollbackAllowance:)`` | Argument  | Unsafe  | Returns `nil`       |
 ///
 /// Each method returns monotonically increasing IDs unless a `timestamp` provided is significantly
-/// (by ten seconds or more) smaller than the one embedded in the immediately preceding ID. If such
-/// a significant clock rollback is detected, the standard `generate` rewinds the generator state
-/// and returns a new ID based on the current `timestamp`, whereas `NoRewind` variants keep the
-/// state untouched and return `nil`. `Core` functions offer low-level thread-unsafe primitives.
+/// (by ten seconds or more by default) smaller than the one embedded in the immediately preceding
+/// ID. If such a significant clock rollback is detected, the standard `generate` rewinds the
+/// generator state and returns a new ID based on the current `timestamp`, whereas `NoRewind`
+/// variants keep the state untouched and return `nil`. `Core` functions offer low-level
+/// thread-unsafe primitives.
 public class Scru128Generator {
   private var timestamp: UInt64 = 0
   private var counterHi: UInt32 = 0
@@ -57,7 +61,9 @@ public class Scru128Generator {
   public func generate() -> Scru128Id {
     lock.lock()
     defer { lock.unlock() }
-    return generateCore(UInt64(Date().timeIntervalSince1970 * 1_000))
+    return generateCore(
+      timestamp: UInt64(Date().timeIntervalSince1970 * 1_000),
+      rollbackAllowance: defaultRollbackAllowance)
   }
 
   /// Generates a new SCRU128 ID object from the current `timestamp`, guaranteeing the monotonic
@@ -67,29 +73,41 @@ public class Scru128Generator {
   public func generateNoRewind() -> Scru128Id? {
     lock.lock()
     defer { lock.unlock() }
-    return generateCoreNoRewind(UInt64(Date().timeIntervalSince1970 * 1_000))
+    return generateCoreNoRewind(
+      timestamp: UInt64(Date().timeIntervalSince1970 * 1_000),
+      rollbackAllowance: defaultRollbackAllowance)
   }
 
   /// Generates a new SCRU128 ID object from the `timestamp` passed.
   ///
   /// See the ``Scru128Generator`` class documentation for the description.
   ///
+  /// The `rollbackAllowance` parameter specifies the amount of `timestamp` rollback that is
+  /// considered significant. A suggested value is `10_000` (milliseconds).
+  ///
   /// Unlike ``generate()``, this method is NOT thread-safe. The generator object should be
   /// protected from concurrent accesses using a mutex or other synchronization mechanism to avoid
   /// race conditions.
   ///
-  /// - Precondition: The argument must be a 48-bit positive integer.
-  public func generateCore(_ timestamp: UInt64) -> Scru128Id {
-    if let value = generateCoreNoRewind(timestamp) {
+  /// - Precondition: `timestamp` must be a 48-bit positive integer.
+  public func generateCore(timestamp: UInt64, rollbackAllowance: UInt64) -> Scru128Id {
+    if let value = generateCoreNoRewind(timestamp: timestamp, rollbackAllowance: rollbackAllowance)
+    {
       return value
     } else {
       // reset state and resume
       self.timestamp = 0
       tsCounterHi = 0
-      let value = generateCoreNoRewind(timestamp)!
+      let value = generateCoreNoRewind(timestamp: timestamp, rollbackAllowance: rollbackAllowance)!
       lastStatusInternal = Status.clockRollback
       return value
     }
+  }
+
+  /// Generates a new SCRU128 ID object from the `timestamp` passed.
+  @available(*, deprecated, message: "Use `generateCore(timestamp:rollbackAllowance:)`.")
+  public func generateCore(_ timestamp: UInt64) -> Scru128Id {
+    return generateCore(timestamp: timestamp, rollbackAllowance: defaultRollbackAllowance)
   }
 
   /// Generates a new SCRU128 ID object from the `timestamp` passed, guaranteeing the monotonic
@@ -97,15 +115,17 @@ public class Scru128Generator {
   ///
   /// See the ``Scru128Generator`` class documentation for the description.
   ///
+  /// The `rollbackAllowance` parameter specifies the amount of `timestamp` rollback that is
+  /// considered significant. A suggested value is `10_000` (milliseconds).
+  ///
   /// Unlike ``generateNoRewind()``, this method is NOT thread-safe. The generator object should be
   /// protected from concurrent accesses using a mutex or other synchronization mechanism to avoid
   /// race conditions.
   ///
-  /// - Precondition: The argument must be a 48-bit positive integer.
-  public func generateCoreNoRewind(_ timestamp: UInt64) -> Scru128Id? {
-    let rollbackAllowance: UInt64 = 10_000  // 10 seconds
-
+  /// - Precondition: `timestamp` must be a 48-bit positive integer.
+  public func generateCoreNoRewind(timestamp: UInt64, rollbackAllowance: UInt64) -> Scru128Id? {
     precondition(timestamp != 0 && timestamp <= maxTimestamp)
+    precondition(rollbackAllowance <= maxTimestamp)
 
     if timestamp > self.timestamp {
       self.timestamp = timestamp

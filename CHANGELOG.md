@@ -4,11 +4,14 @@
 
 ### Added
 
-- `generateNoRewind()` and `generateCoreNoRewind()` to `Scru128Generator`
+- `generateNoRewind()` and `generateCoreNoRewind(timestamp:rollbackAllowance:)`
+  to `Scru128Generator`
+- `generateCore(timestamp:rollbackAllowance:)` to `Scru128Generator`
 
 ### Deprecated
 
 - `Scru128Generator#lastStatus` and `Scru128Generator.Status`
+- `Scru128Generator#generateCore(_:)`
 
 ## v2.3.0 - 2023-02-13
 
