@@ -1,10 +1,10 @@
-/// Maximum value of 48-bit `timestamp` field.
+/// The maximum value of 48-bit `timestamp` field.
 let maxTimestamp: UInt64 = 0xffff_ffff_ffff
 
-/// Maximum value of 24-bit `counter_hi` field.
+/// The maximum value of 24-bit `counter_hi` field.
 let maxCounterHi: UInt32 = 0xff_ffff
 
-/// Maximum value of 24-bit `counter_lo` field.
+/// The maximum value of 24-bit `counter_lo` field.
 let maxCounterLo: UInt32 = 0xff_ffff
 
 private let globalGenerator = Scru128Generator()

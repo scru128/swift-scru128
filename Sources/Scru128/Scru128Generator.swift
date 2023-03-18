@@ -22,10 +22,10 @@ public class Scru128Generator {
   private var counterHi: UInt32 = 0
   private var counterLo: UInt32 = 0
 
-  /// Timestamp at the last renewal of `counter_hi` field.
+  /// The timestamp at the last renewal of `counter_hi` field.
   private var tsCounterHi: UInt64 = 0
 
-  /// ``Status`` code that indicates the internal state involved in the last generation of ID.
+  /// The ``Status`` code that indicates the internal state involved in the last generation of ID.
   ///
   /// Note that the generator object should be protected from concurrent accesses during the
   /// sequential calls to a generation method and this property to avoid race conditions.
@@ -35,7 +35,7 @@ public class Scru128Generator {
   /// For internal use to supress deprecation warnings
   internal var lastStatusInternal: Status = Status.notExecuted
 
-  /// Random number generator used by the generator.
+  /// The random number generator used by the generator.
   private var rng: RandomNumberGenerator
 
   private let lock: NSLocking = NSLock()
@@ -140,7 +140,7 @@ public class Scru128Generator {
     return Scru128Id(self.timestamp, counterHi, counterLo, rng.next())
   }
 
-  /// _Deprecated_. Status code returned by ``lastStatus`` property.
+  /// _Deprecated_. The status code returned by ``lastStatus`` property.
   public enum Status {
     /// Indicates that the generator has yet to generate an ID.
     case notExecuted
