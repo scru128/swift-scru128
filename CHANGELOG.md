@@ -1,16 +1,11 @@
 # Changelog
 
-## v2.4.0 - unreleased
+## v2.3.1 - unreleased
 
 ### Added
 
 - `generateNoRewind()` and `generateCoreNoRewind(timestamp:rollbackAllowance:)`
-  to `Scru128Generator`
-- `generateCore(timestamp:rollbackAllowance:)` to `Scru128Generator`
-
-### Deprecated
-
-- `Scru128Generator#generateCore(_:)`
+  to `Scru128Generator` (experimental)
 
 ## v2.3.0 - 2023-02-13
 

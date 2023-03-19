@@ -12,14 +12,14 @@ let defaultRollbackAllowance: UInt64 = 10_000  // 10 seconds
 /// | ------------------------------------------------------ | --------- | ------- | ------------------- |
 /// | ``generate()``                                         | Now       | Safe    | Rewinds state       |
 /// | ``generateNoRewind()``                                 | Now       | Safe    | Returns `nil`       |
-/// | ``generateCore(timestamp:rollbackAllowance:)``         | Argument  | Unsafe  | Rewinds state       |
+/// | ``generateCore(_:)``                                   | Argument  | Unsafe  | Rewinds state       |
 /// | ``generateCoreNoRewind(timestamp:rollbackAllowance:)`` | Argument  | Unsafe  | Returns `nil`       |
 ///
 /// Each method returns monotonically increasing IDs unless a `timestamp` provided is significantly
 /// (by ten seconds or more by default) smaller than the one embedded in the immediately preceding
-/// ID. If such a significant clock rollback is detected, the standard `generate` rewinds the
-/// generator state and returns a new ID based on the current `timestamp`, whereas `NoRewind`
-/// variants keep the state untouched and return `nil`. `Core` functions offer low-level
+/// ID. If such a significant clock rollback is detected, the `generate` method rewinds the
+/// generator state and returns a new ID based on the current `timestamp`, whereas the experimental
+/// `NoRewind` variants keep the state untouched and return `nil`. `Core` functions offer low-level
 /// thread-unsafe primitives.
 public class Scru128Generator {
   private var timestamp: UInt64 = 0
@@ -70,13 +70,11 @@ public class Scru128Generator {
   public func generate() -> Scru128Id {
     lock.lock()
     defer { lock.unlock() }
-    return generateCore(
-      timestamp: UInt64(Date().timeIntervalSince1970 * 1_000),
-      rollbackAllowance: defaultRollbackAllowance)
+    return generateCore(UInt64(Date().timeIntervalSince1970 * 1_000))
   }
 
-  /// Generates a new SCRU128 ID object from the current `timestamp`, guaranteeing the monotonic
-  /// order of generated IDs despite a significant timestamp rollback.
+  /// _Experimental_. Generates a new SCRU128 ID object from the current `timestamp`, guaranteeing
+  /// the monotonic order of generated IDs despite a significant timestamp rollback.
   ///
   /// See the ``Scru128Generator`` class documentation for the description.
   public func generateNoRewind() -> Scru128Id? {
@@ -91,15 +89,13 @@ public class Scru128Generator {
   ///
   /// See the ``Scru128Generator`` class documentation for the description.
   ///
-  /// The `rollbackAllowance` parameter specifies the amount of `timestamp` rollback that is
-  /// considered significant. A suggested value is `10_000` (milliseconds).
-  ///
   /// Unlike ``generate()``, this method is NOT thread-safe. The generator object should be
   /// protected from concurrent accesses using a mutex or other synchronization mechanism to avoid
   /// race conditions.
   ///
   /// - Precondition: `timestamp` must be a 48-bit positive integer.
-  public func generateCore(timestamp: UInt64, rollbackAllowance: UInt64) -> Scru128Id {
+  public func generateCore(_ timestamp: UInt64) -> Scru128Id {
+    let rollbackAllowance = defaultRollbackAllowance
     if let value = generateCoreNoRewind(timestamp: timestamp, rollbackAllowance: rollbackAllowance)
     {
       return value
@@ -113,14 +109,8 @@ public class Scru128Generator {
     }
   }
 
-  /// Generates a new SCRU128 ID object from the `timestamp` passed.
-  @available(*, deprecated, message: "Use `generateCore(timestamp:rollbackAllowance:)`.")
-  public func generateCore(_ timestamp: UInt64) -> Scru128Id {
-    return generateCore(timestamp: timestamp, rollbackAllowance: defaultRollbackAllowance)
-  }
-
-  /// Generates a new SCRU128 ID object from the `timestamp` passed, guaranteeing the monotonic
-  /// order of generated IDs despite a significant timestamp rollback.
+  /// _Experimental_. Generates a new SCRU128 ID object from the `timestamp` passed, guaranteeing
+  /// the monotonic order of generated IDs despite a significant timestamp rollback.
   ///
   /// See the ``Scru128Generator`` class documentation for the description.
   ///

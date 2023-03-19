@@ -9,12 +9,12 @@ final class Scru128GeneratorGenerateCoreTests: XCTestCase {
     let g = Scru128Generator()
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.notExecuted)
 
-    var prev = g.generateCore(timestamp: ts, rollbackAllowance: 10_000)
+    var prev = g.generateCore(ts)
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
     for i in UInt64(0)..<100_000 {
-      let curr = g.generateCore(timestamp: ts - min(9_998, i), rollbackAllowance: 10_000)
+      let curr = g.generateCore(ts - min(9_998, i))
       XCTAssertTrue(
         g.lastStatus == Scru128Generator.Status.counterLoInc
           || g.lastStatus == Scru128Generator.Status.counterHiInc
@@ -31,17 +31,17 @@ final class Scru128GeneratorGenerateCoreTests: XCTestCase {
     let g = Scru128Generator()
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.notExecuted)
 
-    var prev = g.generateCore(timestamp: ts, rollbackAllowance: 10_000)
+    var prev = g.generateCore(ts)
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
-    var curr = g.generateCore(timestamp: ts - 10_000, rollbackAllowance: 10_000)
+    var curr = g.generateCore(ts - 10_000)
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.clockRollback)
     XCTAssertGreaterThan(prev, curr)
     XCTAssertEqual(curr.timestamp, ts - 10_000)
 
     prev = curr
-    curr = g.generateCore(timestamp: ts - 10_001, rollbackAllowance: 10_000)
+    curr = g.generateCore(ts - 10_001)
     XCTAssertTrue(
       g.lastStatus == Scru128Generator.Status.counterLoInc
         || g.lastStatus == Scru128Generator.Status.counterHiInc
