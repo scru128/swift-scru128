@@ -1,16 +1,35 @@
 import Foundation
 
+/// The default timestamp rollback allowance.
+let defaultRollbackAllowance: UInt64 = 10_000  // 10 seconds
+
 /// Represents a SCRU128 ID generator that encapsulates the monotonic counters and other internal
 /// states.
+///
+/// The generator offers four different methods to generate a SCRU128 ID:
+///
+/// | Flavor                                                 | Timestamp | Thread- | On big clock rewind |
+/// | ------------------------------------------------------ | --------- | ------- | ------------------- |
+/// | ``generate()``                                         | Now       | Safe    | Rewinds state       |
+/// | ``generateNoRewind()``                                 | Now       | Safe    | Returns `nil`       |
+/// | ``generateCore(_:)``                                   | Argument  | Unsafe  | Rewinds state       |
+/// | ``generateCoreNoRewind(timestamp:rollbackAllowance:)`` | Argument  | Unsafe  | Returns `nil`       |
+///
+/// Each method returns monotonically increasing IDs unless a `timestamp` provided is significantly
+/// (by ten seconds or more by default) smaller than the one embedded in the immediately preceding
+/// ID. If such a significant clock rollback is detected, the `generate` method rewinds the
+/// generator state and returns a new ID based on the current `timestamp`, whereas the experimental
+/// `NoRewind` variants keep the state untouched and return `nil`. `Core` functions offer low-level
+/// thread-unsafe primitives.
 public class Scru128Generator {
   private var timestamp: UInt64 = 0
   private var counterHi: UInt32 = 0
   private var counterLo: UInt32 = 0
 
-  /// Timestamp at the last renewal of `counter_hi` field.
+  /// The timestamp at the last renewal of `counter_hi` field.
   private var tsCounterHi: UInt64 = 0
 
-  /// ``Status`` code that indicates the internal state involved in the last generation of ID.
+  /// The ``Status`` code that indicates the internal state involved in the last generation of ID.
   ///
   /// Note that the generator object should be protected from concurrent accesses during the
   /// sequential calls to a generation method and this property to avoid race conditions.
@@ -29,7 +48,7 @@ public class Scru128Generator {
   /// ```
   private(set) public var lastStatus: Status = Status.notExecuted
 
-  /// Random number generator used by the generator.
+  /// The random number generator used by the generator.
   private var rng: RandomNumberGenerator
 
   private let lock: NSLocking = NSLock()
@@ -45,30 +64,74 @@ public class Scru128Generator {
     self.rng = rng
   }
 
-  /// Generates a new SCRU128 ID object.
+  /// Generates a new SCRU128 ID object from the current `timestamp`.
   ///
-  /// This method is thread-safe; multiple threads can call it concurrently.
+  /// See the ``Scru128Generator`` class documentation for the description.
   public func generate() -> Scru128Id {
     lock.lock()
     defer { lock.unlock() }
     return generateCore(UInt64(Date().timeIntervalSince1970 * 1_000))
   }
 
-  /// Generates a new SCRU128 ID object with the `timestamp` passed.
+  /// _Experimental_. Generates a new SCRU128 ID object from the current `timestamp`, guaranteeing
+  /// the monotonic order of generated IDs despite a significant timestamp rollback.
+  ///
+  /// See the ``Scru128Generator`` class documentation for the description.
+  public func generateNoRewind() -> Scru128Id? {
+    lock.lock()
+    defer { lock.unlock() }
+    return generateCoreNoRewind(
+      timestamp: UInt64(Date().timeIntervalSince1970 * 1_000),
+      rollbackAllowance: defaultRollbackAllowance)
+  }
+
+  /// Generates a new SCRU128 ID object from the `timestamp` passed.
+  ///
+  /// See the ``Scru128Generator`` class documentation for the description.
   ///
   /// Unlike ``generate()``, this method is NOT thread-safe. The generator object should be
   /// protected from concurrent accesses using a mutex or other synchronization mechanism to avoid
   /// race conditions.
   ///
-  /// - Precondition: The argument must be a 48-bit positive integer.
+  /// - Precondition: `timestamp` must be a 48-bit positive integer.
   public func generateCore(_ timestamp: UInt64) -> Scru128Id {
-    precondition(timestamp != 0 && timestamp <= maxTimestamp)
+    let rollbackAllowance = defaultRollbackAllowance
+    if let value = generateCoreNoRewind(timestamp: timestamp, rollbackAllowance: rollbackAllowance)
+    {
+      return value
+    } else {
+      // reset state and resume
+      self.timestamp = 0
+      tsCounterHi = 0
+      let value = generateCoreNoRewind(timestamp: timestamp, rollbackAllowance: rollbackAllowance)!
+      lastStatus = Status.clockRollback
+      return value
+    }
+  }
 
-    lastStatus = Status.newTimestamp
+  /// _Experimental_. Generates a new SCRU128 ID object from the `timestamp` passed, guaranteeing
+  /// the monotonic order of generated IDs despite a significant timestamp rollback.
+  ///
+  /// See the ``Scru128Generator`` class documentation for the description.
+  ///
+  /// The `rollbackAllowance` parameter specifies the amount of `timestamp` rollback that is
+  /// considered significant. A suggested value is `10_000` (milliseconds).
+  ///
+  /// Unlike ``generateNoRewind()``, this method is NOT thread-safe. The generator object should be
+  /// protected from concurrent accesses using a mutex or other synchronization mechanism to avoid
+  /// race conditions.
+  ///
+  /// - Precondition: `timestamp` must be a 48-bit positive integer.
+  public func generateCoreNoRewind(timestamp: UInt64, rollbackAllowance: UInt64) -> Scru128Id? {
+    precondition(timestamp != 0 && timestamp <= maxTimestamp)
+    precondition(rollbackAllowance <= maxTimestamp)
+
     if timestamp > self.timestamp {
       self.timestamp = timestamp
       counterLo = rng.next() & maxCounterLo
-    } else if timestamp + 10_000 > self.timestamp {
+      lastStatus = Status.newTimestamp
+    } else if timestamp + rollbackAllowance > self.timestamp {
+      // go on with previous timestamp if new one is not much smaller
       counterLo += 1
       lastStatus = Status.counterLoInc
       if counterLo > maxCounterLo {
@@ -84,11 +147,8 @@ public class Scru128Generator {
         }
       }
     } else {
-      // reset state if clock moves back by ten seconds or more
-      tsCounterHi = 0
-      self.timestamp = timestamp
-      counterLo = rng.next() & maxCounterLo
-      lastStatus = Status.clockRollback
+      // abort if clock moves back to unbearable extent
+      return nil
     }
 
     if self.timestamp - tsCounterHi >= 1_000 || tsCounterHi == 0 {
@@ -99,7 +159,7 @@ public class Scru128Generator {
     return Scru128Id(self.timestamp, counterHi, counterLo, rng.next())
   }
 
-  /// Status code returned by ``lastStatus`` property.
+  /// The status code returned by ``lastStatus`` property.
   public enum Status {
     /// Indicates that the generator has yet to generate an ID.
     case notExecuted

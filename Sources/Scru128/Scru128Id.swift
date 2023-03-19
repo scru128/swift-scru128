@@ -17,10 +17,10 @@ public struct Scru128Id: LosslessStringConvertible {
   /// Creates an object from field values.
   ///
   /// - Parameters:
-  ///   - timestamp: 48-bit `timestamp` field value.
-  ///   - counterHi: 24-bit `counter_hi` field value.
-  ///   - counterLo: 24-bit `counter_lo` field value.
-  ///   - entropy: 32-bit `entropy` field value.
+  ///   - timestamp: A 48-bit `timestamp` field value.
+  ///   - counterHi: A 24-bit `counter_hi` field value.
+  ///   - counterLo: A 24-bit `counter_lo` field value.
+  ///   - entropy: A 32-bit `entropy` field value.
   /// - Precondition: Each argument must be within the value range of the field.
   public init(
     _ timestamp: UInt64, _ counterHi: UInt32, _ counterLo: UInt32, _ entropy: UInt32
@@ -158,7 +158,7 @@ public struct Scru128Id: LosslessStringConvertible {
 /// Digit characters used in the Base36 notation.
 private let digits = [UInt8]("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".utf8)
 
-/// O(1) map from ASCII code points to Base36 digit values.
+/// An O(1) map from ASCII code points to Base36 digit values.
 private let decodeMap: [UInt8] = [
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -213,16 +213,16 @@ extension Scru128Id: Codable {
     } else if let byteArray = try? container.decode([UInt8].self) {
       if byteArray.count == 16 {
         self.init(byteArray)
-      } else {
-        guard let strValue = String(bytes: byteArray, encoding: .utf8) else {
-          throw DecodingError.dataCorruptedError(
-            in: container, debugDescription: "could not parse byte array as Scru128Id")
-        }
+      } else if byteArray.allSatisfy({ $0 < 0x80 }) {
+        let strValue = String(cString: byteArray + [0])
         guard let bs = Self.parse(strValue) else {
           throw DecodingError.dataCorruptedError(
             in: container, debugDescription: "could not parse byte array as Scru128Id")
         }
         self.init(bs)
+      } else {
+        throw DecodingError.dataCorruptedError(
+          in: container, debugDescription: "could not parse byte array as Scru128Id")
       }
     } else {
       throw DecodingError.dataCorruptedError(
