@@ -7,18 +7,18 @@ final class Scru128GeneratorGenerateCoreTests: XCTestCase {
   func testDecreasingOrConstantTimestamp() throws {
     let ts: UInt64 = 0x0123_4567_89ab
     let g = Scru128Generator()
-    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.notExecuted)
+    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.notExecuted)
 
     var prev = g.generateCore(timestamp: ts, rollbackAllowance: 10_000)
-    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
+    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
     for i in UInt64(0)..<100_000 {
       let curr = g.generateCore(timestamp: ts - min(9_998, i), rollbackAllowance: 10_000)
       XCTAssertTrue(
-        g.lastStatusInternal == Scru128Generator.Status.counterLoInc
-          || g.lastStatusInternal == Scru128Generator.Status.counterHiInc
-          || g.lastStatusInternal == Scru128Generator.Status.timestampInc)
+        g.lastStatus == Scru128Generator.Status.counterLoInc
+          || g.lastStatus == Scru128Generator.Status.counterHiInc
+          || g.lastStatus == Scru128Generator.Status.timestampInc)
       XCTAssertLessThan(prev, curr)
       prev = curr
     }
@@ -29,23 +29,23 @@ final class Scru128GeneratorGenerateCoreTests: XCTestCase {
   func testTimestampRollback() throws {
     let ts: UInt64 = 0x0123_4567_89ab
     let g = Scru128Generator()
-    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.notExecuted)
+    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.notExecuted)
 
     var prev = g.generateCore(timestamp: ts, rollbackAllowance: 10_000)
-    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
+    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
     var curr = g.generateCore(timestamp: ts - 10_000, rollbackAllowance: 10_000)
-    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.clockRollback)
+    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.clockRollback)
     XCTAssertGreaterThan(prev, curr)
     XCTAssertEqual(curr.timestamp, ts - 10_000)
 
     prev = curr
     curr = g.generateCore(timestamp: ts - 10_001, rollbackAllowance: 10_000)
     XCTAssertTrue(
-      g.lastStatusInternal == Scru128Generator.Status.counterLoInc
-        || g.lastStatusInternal == Scru128Generator.Status.counterHiInc
-        || g.lastStatusInternal == Scru128Generator.Status.timestampInc)
+      g.lastStatus == Scru128Generator.Status.counterLoInc
+        || g.lastStatus == Scru128Generator.Status.counterHiInc
+        || g.lastStatus == Scru128Generator.Status.timestampInc)
     XCTAssertLessThan(prev, curr)
   }
 }
@@ -55,18 +55,18 @@ final class Scru128GeneratorGenerateCoreNoRewindTests: XCTestCase {
   func testDecreasingOrConstantTimestamp() throws {
     let ts: UInt64 = 0x0123_4567_89ab
     let g = Scru128Generator()
-    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.notExecuted)
+    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.notExecuted)
 
     var prev = g.generateCoreNoRewind(timestamp: ts, rollbackAllowance: 10_000)!
-    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
+    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
     for i in UInt64(0)..<100_000 {
       let curr = g.generateCoreNoRewind(timestamp: ts - min(9_998, i), rollbackAllowance: 10_000)!
       XCTAssertTrue(
-        g.lastStatusInternal == Scru128Generator.Status.counterLoInc
-          || g.lastStatusInternal == Scru128Generator.Status.counterHiInc
-          || g.lastStatusInternal == Scru128Generator.Status.timestampInc)
+        g.lastStatus == Scru128Generator.Status.counterLoInc
+          || g.lastStatus == Scru128Generator.Status.counterHiInc
+          || g.lastStatus == Scru128Generator.Status.timestampInc)
       XCTAssertLessThan(prev, curr)
       prev = curr
     }
@@ -77,19 +77,19 @@ final class Scru128GeneratorGenerateCoreNoRewindTests: XCTestCase {
   func testTimestampRollback() throws {
     let ts: UInt64 = 0x0123_4567_89ab
     let g = Scru128Generator()
-    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.notExecuted)
+    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.notExecuted)
 
     let prev = g.generateCoreNoRewind(timestamp: ts, rollbackAllowance: 10_000)!
-    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
+    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
     var curr = g.generateCoreNoRewind(timestamp: ts - 10_000, rollbackAllowance: 10_000)
     XCTAssertNil(curr)
-    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
+    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
 
     curr = g.generateCoreNoRewind(timestamp: ts - 10_001, rollbackAllowance: 10_000)
     XCTAssertNil(curr)
-    XCTAssertEqual(g.lastStatusInternal, Scru128Generator.Status.newTimestamp)
+    XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
   }
 }
 
