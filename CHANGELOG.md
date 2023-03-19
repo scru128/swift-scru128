@@ -1,11 +1,15 @@
 # Changelog
 
-## v2.3.1 - unreleased
+## v2.3.1 - 2023-03-19
 
 ### Added
 
 - `generateNoRewind()` and `generateCoreNoRewind(timestamp:rollbackAllowance:)`
   to `Scru128Generator` (experimental)
+
+### Maintenance
+
+- Improved documentation about generator method flavors
 
 ## v2.3.0 - 2023-02-13
 
