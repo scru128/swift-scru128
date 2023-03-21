@@ -12,7 +12,7 @@ let defaultRollbackAllowance: UInt64 = 10_000  // 10 seconds
 /// | ----------------------------------------------------- | --------- | ------- | ------------------- |
 /// | ``generate()``                                        | Now       | Safe    | Resets generator    |
 /// | ``generateOrAbort()``                                 | Now       | Safe    | Returns `nil`       |
-/// | ``generateCore(_:)``                                  | Argument  | Unsafe  | Resets generator    |
+/// | ``generateOrResetCore(timestamp:rollbackAllowance:)`` | Argument  | Unsafe  | Resets generator    |
 /// | ``generateOrAbortCore(timestamp:rollbackAllowance:)`` | Argument  | Unsafe  | Returns `nil`       |
 ///
 /// All of these methods return monotonically increasing IDs unless a `timestamp` provided is
@@ -63,13 +63,17 @@ public class Scru128Generator {
     self.rng = rng
   }
 
-  /// Generates a new SCRU128 ID object from the current `timestamp`.
+  /// Generates a new SCRU128 ID object from the current `timestamp`, or resets the generator upon
+  /// significant timestamp rollback.
   ///
   /// See the ``Scru128Generator`` class documentation for the description.
   public func generate() -> Scru128Id {
     lock.lock()
     defer { lock.unlock() }
-    return generateCore(UInt64(Date().timeIntervalSince1970 * 1_000))
+    return generateOrResetCore(
+      timestamp: UInt64(Date().timeIntervalSince1970 * 1_000),
+      rollbackAllowance: defaultRollbackAllowance)
+
   }
 
   /// Generates a new SCRU128 ID object from the current `timestamp`, or returns `nil` upon
@@ -84,17 +88,20 @@ public class Scru128Generator {
       rollbackAllowance: defaultRollbackAllowance)
   }
 
-  /// Generates a new SCRU128 ID object from the `timestamp` passed.
+  /// Generates a new SCRU128 ID object from the `timestamp` passed, or resets the generator upon
+  /// significant timestamp rollback.
   ///
   /// See the ``Scru128Generator`` class documentation for the description.
+  ///
+  /// The `rollbackAllowance` parameter specifies the amount of `timestamp` rollback that is
+  /// considered significant. A suggested value is `10_000` (milliseconds).
   ///
   /// Unlike ``generate()``, this method is NOT thread-safe. The generator object should be
   /// protected from concurrent accesses using a mutex or other synchronization mechanism to avoid
   /// race conditions.
   ///
   /// - Precondition: `timestamp` must be a 48-bit positive integer.
-  public func generateCore(_ timestamp: UInt64) -> Scru128Id {
-    let rollbackAllowance = defaultRollbackAllowance
+  public func generateOrResetCore(timestamp: UInt64, rollbackAllowance: UInt64) -> Scru128Id {
     if let value = generateOrAbortCore(timestamp: timestamp, rollbackAllowance: rollbackAllowance) {
       return value
     } else {
@@ -105,6 +112,15 @@ public class Scru128Generator {
       lastStatus = Status.clockRollback
       return value
     }
+  }
+
+  /// A deprecated synonym for `generateOrResetCore(timestamp: timestamp, rollbackAllowance: 10_000)`.
+  @available(
+    *, deprecated,
+    message: "Use `generateOrResetCore(timestamp: timestamp, rollbackAllowance: 10_000)` instead."
+  )
+  public func generateCore(_ timestamp: UInt64) -> Scru128Id {
+    return generateOrResetCore(timestamp: timestamp, rollbackAllowance: defaultRollbackAllowance)
   }
 
   /// Generates a new SCRU128 ID object from the `timestamp` passed, or returns `nil` upon

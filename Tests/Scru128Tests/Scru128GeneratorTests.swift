@@ -2,19 +2,19 @@ import XCTest
 
 @testable import Scru128
 
-final class Scru128GeneratorGenerateCoreTests: XCTestCase {
+final class Scru128GeneratorGenerateOrResetTests: XCTestCase {
   /// Generates increasing IDs even with decreasing or constant timestamp
   func testDecreasingOrConstantTimestamp() throws {
     let ts: UInt64 = 0x0123_4567_89ab
     let g = Scru128Generator()
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.notExecuted)
 
-    var prev = g.generateCore(ts)
+    var prev = g.generateOrResetCore(timestamp: ts, rollbackAllowance: 10_000)
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
     for i in UInt64(0)..<100_000 {
-      let curr = g.generateCore(ts - min(9_998, i))
+      let curr = g.generateOrResetCore(timestamp: ts - min(9_998, i), rollbackAllowance: 10_000)
       XCTAssertTrue(
         g.lastStatus == Scru128Generator.Status.counterLoInc
           || g.lastStatus == Scru128Generator.Status.counterHiInc
@@ -31,17 +31,17 @@ final class Scru128GeneratorGenerateCoreTests: XCTestCase {
     let g = Scru128Generator()
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.notExecuted)
 
-    var prev = g.generateCore(ts)
+    var prev = g.generateOrResetCore(timestamp: ts, rollbackAllowance: 10_000)
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
-    var curr = g.generateCore(ts - 10_000)
+    var curr = g.generateOrResetCore(timestamp: ts - 10_000, rollbackAllowance: 10_000)
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.clockRollback)
     XCTAssertGreaterThan(prev, curr)
     XCTAssertEqual(curr.timestamp, ts - 10_000)
 
     prev = curr
-    curr = g.generateCore(ts - 10_001)
+    curr = g.generateOrResetCore(timestamp: ts - 10_001, rollbackAllowance: 10_000)
     XCTAssertTrue(
       g.lastStatus == Scru128Generator.Status.counterLoInc
         || g.lastStatus == Scru128Generator.Status.counterHiInc
