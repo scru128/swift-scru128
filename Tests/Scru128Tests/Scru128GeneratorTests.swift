@@ -50,19 +50,19 @@ final class Scru128GeneratorGenerateCoreTests: XCTestCase {
   }
 }
 
-final class Scru128GeneratorGenerateCoreNoRewindTests: XCTestCase {
+final class Scru128GeneratorGenerateOrAbortTests: XCTestCase {
   /// Generates increasing IDs even with decreasing or constant timestamp
   func testDecreasingOrConstantTimestamp() throws {
     let ts: UInt64 = 0x0123_4567_89ab
     let g = Scru128Generator()
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.notExecuted)
 
-    var prev = g.generateCoreNoRewind(timestamp: ts, rollbackAllowance: 10_000)!
+    var prev = g.generateOrAbortCore(timestamp: ts, rollbackAllowance: 10_000)!
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
     for i in UInt64(0)..<100_000 {
-      let curr = g.generateCoreNoRewind(timestamp: ts - min(9_998, i), rollbackAllowance: 10_000)!
+      let curr = g.generateOrAbortCore(timestamp: ts - min(9_998, i), rollbackAllowance: 10_000)!
       XCTAssertTrue(
         g.lastStatus == Scru128Generator.Status.counterLoInc
           || g.lastStatus == Scru128Generator.Status.counterHiInc
@@ -79,15 +79,15 @@ final class Scru128GeneratorGenerateCoreNoRewindTests: XCTestCase {
     let g = Scru128Generator()
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.notExecuted)
 
-    let prev = g.generateCoreNoRewind(timestamp: ts, rollbackAllowance: 10_000)!
+    let prev = g.generateOrAbortCore(timestamp: ts, rollbackAllowance: 10_000)!
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
     XCTAssertEqual(prev.timestamp, ts)
 
-    var curr = g.generateCoreNoRewind(timestamp: ts - 10_000, rollbackAllowance: 10_000)
+    var curr = g.generateOrAbortCore(timestamp: ts - 10_000, rollbackAllowance: 10_000)
     XCTAssertNil(curr)
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
 
-    curr = g.generateCoreNoRewind(timestamp: ts - 10_001, rollbackAllowance: 10_000)
+    curr = g.generateOrAbortCore(timestamp: ts - 10_001, rollbackAllowance: 10_000)
     XCTAssertNil(curr)
     XCTAssertEqual(g.lastStatus, Scru128Generator.Status.newTimestamp)
   }
