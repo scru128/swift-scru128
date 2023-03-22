@@ -25,7 +25,7 @@ final class Scru128GeneratorGenerateOrResetTests: XCTestCase {
     XCTAssertGreaterThanOrEqual(prev.timestamp, ts)
   }
 
-  /// Breaks increasing order of IDs if timestamp moves backward a lot
+  /// Breaks increasing order of IDs if timestamp goes backwards by ten seconds
   func testTimestampRollback() throws {
     let ts: UInt64 = 0x0123_4567_89ab
     let g = Scru128Generator()
@@ -73,7 +73,7 @@ final class Scru128GeneratorGenerateOrAbortTests: XCTestCase {
     XCTAssertGreaterThanOrEqual(prev.timestamp, ts)
   }
 
-  /// Returns nil if timestamp moves backward a lot
+  /// Returns nil if timestamp goes backwards by ten seconds
   func testTimestampRollback() throws {
     let ts: UInt64 = 0x0123_4567_89ab
     let g = Scru128Generator()

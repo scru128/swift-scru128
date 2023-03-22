@@ -75,8 +75,6 @@ public class Scru128Generator {
   /// Examples:
   ///
   /// ```swift
-  /// import Scru128
-  ///
   /// let g = Scru128Generator()
   /// let x = g.generateOrAbort()!
   /// guard let y = g.generateOrAbort() else {
@@ -165,7 +163,7 @@ public class Scru128Generator {
         }
       }
     } else {
-      // abort if clock moves back to unbearable extent
+      // abort if clock went backwards to unbearable extent
       return nil
     }
 
