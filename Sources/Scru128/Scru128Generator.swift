@@ -71,6 +71,19 @@ public class Scru128Generator {
   /// significant timestamp rollback.
   ///
   /// See the ``Scru128Generator`` class documentation for the description.
+  ///
+  /// Examples:
+  ///
+  /// ```swift
+  /// import Scru128
+  ///
+  /// let g = Scru128Generator()
+  /// let x = g.generateOrAbort()!
+  /// guard let y = g.generateOrAbort() else {
+  ///   fatalError("The clock went backwards by ten seconds!")
+  /// }
+  /// assert(x < y)
+  /// ```
   public func generateOrAbort() -> Scru128Id? {
     lock.lock()
     defer { lock.unlock() }
