@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.4.1 - 2023-04-08
+
+### Maintenance
+
+- Tweaked docs and tests
+
 ## v2.4.0 - 2023-03-22
 
 ### Added

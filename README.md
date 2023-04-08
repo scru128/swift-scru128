@@ -2,6 +2,8 @@
 
 [![GitHub tag](https://img.shields.io/github/v/tag/scru128/swift-scru128)](https://github.com/scru128/swift-scru128)
 [![License](https://img.shields.io/github/license/scru128/swift-scru128)](https://github.com/scru128/swift-scru128/blob/main/LICENSE)
+[![Swift Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fscru128%2Fswift-scru128%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/scru128/swift-scru128)
+[![Platform Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fscru128%2Fswift-scru128%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/scru128/swift-scru128)
 
 SCRU128 ID is yet another attempt to supersede [UUID] for the users who need
 decentralized, globally unique time-ordered identifiers. SCRU128 is inspired by
@@ -28,10 +30,10 @@ print(scru128String())  // e.g. "036Z951MHZX67T63MQ9XE6Q0J"
 
 See [SCRU128 Specification] for details.
 
-[uuid]: https://en.wikipedia.org/wiki/Universally_unique_identifier
-[ulid]: https://github.com/ulid/spec
-[ksuid]: https://github.com/segmentio/ksuid
-[scru128 specification]: https://github.com/scru128/spec
+[UUID]: https://en.wikipedia.org/wiki/Universally_unique_identifier
+[ULID]: https://github.com/ulid/spec
+[KSUID]: https://github.com/segmentio/ksuid
+[SCRU128 Specification]: https://github.com/scru128/spec
 
 ## Add swift-scru128 as a package dependency
 
@@ -57,3 +59,7 @@ And, include `Scru128` as a dependency for your target:
 ## License
 
 Licensed under the Apache License, Version 2.0.
+
+## See also
+
+- [swift-scru128 - Swift Package Index](https://swiftpackageindex.com/scru128/swift-scru128)
