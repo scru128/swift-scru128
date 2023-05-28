@@ -2,6 +2,10 @@
 
 ## v2.4.2 - unreleased
 
+### Added
+
+- `Sendable` protocol conformance to `Scru128Id`
+
 ### Maintenance
 
 - Fixed README
