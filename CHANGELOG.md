@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.4.2 - unreleased
+
+### Maintenance
+
+- Fixed README
+
 ## v2.4.1 - 2023-04-08
 
 ### Maintenance
