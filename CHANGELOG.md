@@ -8,6 +8,7 @@
 
 ### Maintenance
 
+- Upgraded minimum Swift version to 5.6
 - Fixed README
 
 ## v2.4.1 - 2023-04-08
