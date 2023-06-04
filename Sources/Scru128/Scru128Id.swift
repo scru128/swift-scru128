@@ -230,3 +230,5 @@ extension Scru128Id: Codable {
     }
   }
 }
+
+extension Scru128Id: Sendable {}

@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.4.2 - 2023-06-04
+
+### Added
+
+- `Sendable` protocol conformance to `Scru128Id`
+
+### Maintenance
+
+- Upgraded minimum Swift version to 5.6
+- Rewrote multi-threaded test cases using Swift Concurrency
+- Fixed README
+
 ## v2.4.1 - 2023-04-08
 
 ### Maintenance

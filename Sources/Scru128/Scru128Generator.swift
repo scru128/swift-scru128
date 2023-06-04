@@ -39,9 +39,9 @@ public class Scru128Generator {
   internal var lastStatusInternal: Status = Status.notExecuted
 
   /// The random number generator used by the generator.
-  private var rng: RandomNumberGenerator
+  private var rng: any RandomNumberGenerator
 
-  private let lock: NSLocking = NSLock()
+  private let lock = NSLock()
 
   /// Creates a generator object with the default random number generator.
   public convenience init() {
@@ -50,7 +50,7 @@ public class Scru128Generator {
 
   /// Creates a generator object with a specified random number generator. The specified random
   /// number generator should be cryptographically strong and securely seeded.
-  public init(rng: RandomNumberGenerator) {
+  public init(rng: any RandomNumberGenerator) {
     self.rng = rng
   }
 

@@ -37,8 +37,9 @@ See [SCRU128 Specification] for details.
 
 ## Add swift-scru128 as a package dependency
 
-To add this library to your Xcode project as a dependency, select **File > Add
-Packages** and enter the package URL: https://github.com/scru128/swift-scru128
+To add this library to your Xcode project as a dependency, select **File** >
+**Add Packages** and enter the package URL:
+https://github.com/scru128/swift-scru128
 
 To use this library in a SwiftPM project, add the following line to the
 dependencies in your Package.swift file:
