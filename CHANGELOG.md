@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.4.3 - 2023-06-05
+
+### Fixed
+
+- multi-threaded test cases by adding proper @available attribute
+
 ## v2.4.2 - 2023-06-04
 
 ### Added

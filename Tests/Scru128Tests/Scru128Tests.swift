@@ -51,6 +51,7 @@ final class Scru128Tests: XCTestCase {
   }
 
   /// Generates no IDs sharing same timestamp and counters under multithreading
+  @available(iOS 13.0, macOS 10.15, macCatalyst 13.0, tvOS 13.0, watchOS 6.0, *)
   func testThreading() async throws {
     let results = await withTaskGroup(of: [Scru128Id].self) { group in
       for _ in 0..<4 {
