@@ -156,7 +156,7 @@ public struct Scru128Id: LosslessStringConvertible {
 }
 
 /// Digit characters used in the Base36 notation.
-private let digits = [UInt8]("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".utf8)
+private let digits = [UInt8]("0123456789abcdefghijklmnopqrstuvwxyz".utf8)
 
 /// An O(1) map from ASCII code points to Base36 digit values.
 private let decodeMap: [UInt8] = [

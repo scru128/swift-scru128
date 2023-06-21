@@ -20,7 +20,7 @@ let defaultRollbackAllowance: UInt64 = 10_000  // 10 seconds
 /// preceding ID. If such a significant clock rollback is detected, the `generate` (OrReset) method
 /// resets the generator and returns a new ID based on the given `timestamp`, while the `OrAbort`
 /// variants abort and return `nil`. The `Core` functions offer low-level thread-unsafe primitives.
-public class Scru128Generator {
+public class Scru128Generator<R: RandomNumberGenerator> {
   private var timestamp: UInt64 = 0
   private var counterHi: UInt32 = 0
   private var counterLo: UInt32 = 0
@@ -28,29 +28,19 @@ public class Scru128Generator {
   /// The timestamp at the last renewal of `counter_hi` field.
   private var tsCounterHi: UInt64 = 0
 
-  /// The ``Status`` code that indicates the internal state involved in the last generation of ID.
-  ///
-  /// Note that the generator object should be protected from concurrent accesses during the
-  /// sequential calls to a generation method and this property to avoid race conditions.
-  @available(*, deprecated, message: "Use `generateOrAbort()` to guarantee monotonicity.")
-  public var lastStatus: Status { lastStatusInternal }
-
-  /// For internal use to supress deprecation warnings
-  internal var lastStatusInternal: Status = Status.notExecuted
-
   /// The random number generator used by the generator.
-  private var rng: any RandomNumberGenerator
+  private var rng: R
 
   private let lock = NSLock()
 
   /// Creates a generator object with the default random number generator.
-  public convenience init() {
+  public convenience init() where R == SystemRandomNumberGenerator {
     self.init(rng: SystemRandomNumberGenerator())
   }
 
   /// Creates a generator object with a specified random number generator. The specified random
   /// number generator should be cryptographically strong and securely seeded.
-  public init(rng: any RandomNumberGenerator) {
+  public init(rng: R) {
     self.rng = rng
   }
 
@@ -110,19 +100,8 @@ public class Scru128Generator {
       // reset state and resume
       self.timestamp = 0
       tsCounterHi = 0
-      let value = generateOrAbortCore(timestamp: timestamp, rollbackAllowance: rollbackAllowance)!
-      lastStatusInternal = Status.clockRollback
-      return value
+      return generateOrAbortCore(timestamp: timestamp, rollbackAllowance: rollbackAllowance)!
     }
-  }
-
-  /// A deprecated synonym for `generateOrResetCore(timestamp: timestamp, rollbackAllowance: 10_000)`.
-  @available(
-    *, deprecated,
-    message: "Use `generateOrResetCore(timestamp: timestamp, rollbackAllowance: 10_000)` instead."
-  )
-  public func generateCore(_ timestamp: UInt64) -> Scru128Id {
-    return generateOrResetCore(timestamp: timestamp, rollbackAllowance: defaultRollbackAllowance)
   }
 
   /// Generates a new SCRU128 ID object from the `timestamp` passed, or returns `nil` upon
@@ -145,21 +124,17 @@ public class Scru128Generator {
     if timestamp > self.timestamp {
       self.timestamp = timestamp
       counterLo = rng.next() & maxCounterLo
-      lastStatusInternal = Status.newTimestamp
     } else if timestamp + rollbackAllowance > self.timestamp {
       // go on with previous timestamp if new one is not much smaller
       counterLo += 1
-      lastStatusInternal = Status.counterLoInc
       if counterLo > maxCounterLo {
         counterLo = 0
         counterHi += 1
-        lastStatusInternal = Status.counterHiInc
         if counterHi > maxCounterHi {
           counterHi = 0
           // increment timestamp at counter overflow
           self.timestamp += 1
           counterLo = rng.next() & maxCounterLo
-          lastStatusInternal = Status.timestampInc
         }
       }
     } else {
@@ -173,30 +148,6 @@ public class Scru128Generator {
     }
 
     return Scru128Id(self.timestamp, counterHi, counterLo, rng.next())
-  }
-
-  /// _Deprecated_: The status code returned by ``lastStatus`` property.
-  public enum Status {
-    /// Indicates that the generator has yet to generate an ID.
-    case notExecuted
-
-    /// Indicates that the latest `timestamp` was used because it was greater than the previous one.
-    case newTimestamp
-
-    /// Indicates that `counter_lo` was incremented because the latest `timestamp` was no greater
-    /// than the previous one.
-    case counterLoInc
-
-    /// Indicates that `counter_hi` was incremented because `counter_lo` reached its maximum value.
-    case counterHiInc
-
-    /// Indicates that the previous `timestamp` was incremented because `counter_hi` reached its
-    /// maximum value.
-    case timestampInc
-
-    /// Indicates that the monotonic order of generated IDs was broken because the latest
-    /// `timestamp` was less than the previous one by ten seconds or more.
-    case clockRollback
   }
 }
 
