@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.4.4 - 2023-06-21
+
+### Maintenance
+
+- Improved test cases
+
 ## v2.4.3 - 2023-06-05
 
 ### Fixed
