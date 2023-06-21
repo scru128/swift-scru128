@@ -2,6 +2,11 @@
 
 ## v3.0.0 - unreleased
 
+Most notably, v3 switches the letter case of generated IDs from uppercase (e.g.,
+"036Z951MHJIKZIK2GSL81GR7L") to lowercase (e.g., "036z951mhjikzik2gsl81gr7l"),
+though it is technically not supposed to break existing code because SCRU128 is
+a case-insensitive scheme. Other changes include the removal of deprecated APIs.
+
 ### Removed
 
 - Deprecated items:
@@ -10,6 +15,7 @@
 
 ### Changed
 
+- Letter case of generated IDs from uppercase to lowercase
 - `Scru128Generator` to `Scru128Generator<R: RandomNumberGenerator>` to
   substitute static generics for dynamic existential type
 

@@ -8,7 +8,7 @@ final class Scru128Tests: XCTestCase {
   /// Generates 25-digit canonical string
   func testFormat() throws {
     for e in Self.samples {
-      XCTAssertNotNil(e.range(of: "^[0-9A-Z]{25}$", options: .regularExpression))
+      XCTAssertNotNil(e.range(of: "^[0-9a-z]{25}$", options: .regularExpression))
     }
   }
 
