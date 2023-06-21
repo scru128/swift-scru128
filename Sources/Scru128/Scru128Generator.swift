@@ -20,7 +20,7 @@ let defaultRollbackAllowance: UInt64 = 10_000  // 10 seconds
 /// preceding ID. If such a significant clock rollback is detected, the `generate` (OrReset) method
 /// resets the generator and returns a new ID based on the given `timestamp`, while the `OrAbort`
 /// variants abort and return `nil`. The `Core` functions offer low-level thread-unsafe primitives.
-public class Scru128Generator {
+public class Scru128Generator<R: RandomNumberGenerator> {
   private var timestamp: UInt64 = 0
   private var counterHi: UInt32 = 0
   private var counterLo: UInt32 = 0
@@ -29,18 +29,18 @@ public class Scru128Generator {
   private var tsCounterHi: UInt64 = 0
 
   /// The random number generator used by the generator.
-  private var rng: any RandomNumberGenerator
+  private var rng: R
 
   private let lock = NSLock()
 
   /// Creates a generator object with the default random number generator.
-  public convenience init() {
+  public convenience init() where R == SystemRandomNumberGenerator {
     self.init(rng: SystemRandomNumberGenerator())
   }
 
   /// Creates a generator object with a specified random number generator. The specified random
   /// number generator should be cryptographically strong and securely seeded.
-  public init(rng: any RandomNumberGenerator) {
+  public init(rng: R) {
     self.rng = rng
   }
 
