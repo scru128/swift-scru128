@@ -12,7 +12,7 @@ final class Scru128GeneratorGenerateOrResetTests: XCTestCase {
     XCTAssertEqual(prev.timestamp, ts)
 
     for i in UInt64(0)..<100_000 {
-      let curr = g.generateOrResetCore(timestamp: ts - min(9_998, i), rollbackAllowance: 10_000)
+      let curr = g.generateOrResetCore(timestamp: ts - min(9_999, i), rollbackAllowance: 10_000)
       XCTAssertLessThan(prev, curr)
       prev = curr
     }
@@ -28,11 +28,15 @@ final class Scru128GeneratorGenerateOrResetTests: XCTestCase {
     XCTAssertEqual(prev.timestamp, ts)
 
     var curr = g.generateOrResetCore(timestamp: ts - 10_000, rollbackAllowance: 10_000)
-    XCTAssertGreaterThan(prev, curr)
-    XCTAssertEqual(curr.timestamp, ts - 10_000)
+    XCTAssertLessThan(prev, curr)
 
     prev = curr
     curr = g.generateOrResetCore(timestamp: ts - 10_001, rollbackAllowance: 10_000)
+    XCTAssertGreaterThan(prev, curr)
+    XCTAssertEqual(curr.timestamp, ts - 10_001)
+
+    prev = curr
+    curr = g.generateOrResetCore(timestamp: ts - 10_002, rollbackAllowance: 10_000)
     XCTAssertLessThan(prev, curr)
   }
 }
@@ -47,7 +51,7 @@ final class Scru128GeneratorGenerateOrAbortTests: XCTestCase {
     XCTAssertEqual(prev.timestamp, ts)
 
     for i in UInt64(0)..<100_000 {
-      let curr = g.generateOrAbortCore(timestamp: ts - min(9_998, i), rollbackAllowance: 10_000)!
+      let curr = g.generateOrAbortCore(timestamp: ts - min(9_999, i), rollbackAllowance: 10_000)!
       XCTAssertLessThan(prev, curr)
       prev = curr
     }
@@ -63,9 +67,12 @@ final class Scru128GeneratorGenerateOrAbortTests: XCTestCase {
     XCTAssertEqual(prev.timestamp, ts)
 
     var curr = g.generateOrAbortCore(timestamp: ts - 10_000, rollbackAllowance: 10_000)
-    XCTAssertNil(curr)
+    XCTAssertLessThan(prev, curr!)
 
     curr = g.generateOrAbortCore(timestamp: ts - 10_001, rollbackAllowance: 10_000)
+    XCTAssertNil(curr)
+
+    curr = g.generateOrAbortCore(timestamp: ts - 10_002, rollbackAllowance: 10_000)
     XCTAssertNil(curr)
   }
 }

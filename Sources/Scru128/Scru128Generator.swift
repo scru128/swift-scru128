@@ -16,10 +16,11 @@ let defaultRollbackAllowance: UInt64 = 10_000  // 10 seconds
 /// | ``generateOrAbortCore(timestamp:rollbackAllowance:)`` | Argument  | Unsafe  | Returns `nil`       |
 ///
 /// All of these methods return monotonically increasing IDs unless a `timestamp` provided is
-/// significantly (by default, ten seconds or more) smaller than the one embedded in the immediately
-/// preceding ID. If such a significant clock rollback is detected, the `generate` (OrReset) method
-/// resets the generator and returns a new ID based on the given `timestamp`, while the `OrAbort`
-/// variants abort and return `nil`. The `Core` functions offer low-level thread-unsafe primitives.
+/// significantly (by default, more than ten seconds) smaller than the one embedded in the
+/// immediately preceding ID. If such a significant clock rollback is detected, the `generate`
+/// (OrReset) method resets the generator and returns a new ID based on the given `timestamp`, while
+/// the `OrAbort` variants abort and return `nil`. The `Core` functions offer low-level
+/// thread-unsafe primitives.
 public class Scru128Generator<R: RandomNumberGenerator> {
   private var timestamp: UInt64 = 0
   private var counterHi: UInt32 = 0
@@ -124,7 +125,7 @@ public class Scru128Generator<R: RandomNumberGenerator> {
     if timestamp > self.timestamp {
       self.timestamp = timestamp
       counterLo = rng.next() & maxCounterLo
-    } else if timestamp + rollbackAllowance > self.timestamp {
+    } else if timestamp + rollbackAllowance >= self.timestamp {
       // go on with previous timestamp if new one is not much smaller
       counterLo += 1
       if counterLo > maxCounterLo {
