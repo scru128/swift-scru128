@@ -1,8 +1,25 @@
 /// Represents a SCRU128 ID and provides converters and comparison operators.
 public struct Scru128Id: LosslessStringConvertible {
-  /// Returns a 16-byte byte array containing the 128-bit unsigned integer representation in the
+  /// Returns a 16-byte byte tuple containing the 128-bit unsigned integer representation in the
   /// big-endian (network) byte order.
-  public let bytes: [UInt8]
+  public let bytes:
+    (
+      UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,
+      UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8
+    )
+
+  /// Creates an object from a byte tuple that represents a 128-bit unsigned integer.
+  ///
+  /// - Parameter bytes: A 16-byte byte array that represents a 128-bit unsigned integer in the
+  ///                    big-endian (network) byte order.
+  public init(
+    _ bytes: (
+      UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,
+      UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8
+    )
+  ) {
+    self.bytes = bytes
+  }
 
   /// Creates an object from a byte array that represents a 128-bit unsigned integer.
   ///
@@ -11,7 +28,12 @@ public struct Scru128Id: LosslessStringConvertible {
   /// - Precondition: The byte length of the argument must be 16.
   public init(_ byteArray: [UInt8]) {
     precondition(byteArray.count == 16)
-    bytes = byteArray
+    bytes = (
+      byteArray[0], byteArray[1], byteArray[2], byteArray[3],
+      byteArray[4], byteArray[5], byteArray[6], byteArray[7],
+      byteArray[8], byteArray[9], byteArray[10], byteArray[11],
+      byteArray[12], byteArray[13], byteArray[14], byteArray[15]
+    )
   }
 
   /// Creates an object from field values.
@@ -28,7 +50,7 @@ public struct Scru128Id: LosslessStringConvertible {
     precondition(timestamp <= maxTimestamp)
     precondition(counterHi <= maxCounterHi)
     precondition(counterLo <= maxCounterLo)
-    bytes = [
+    bytes = (
       UInt8(truncatingIfNeeded: timestamp >> 40),
       UInt8(truncatingIfNeeded: timestamp >> 32),
       UInt8(truncatingIfNeeded: timestamp >> 24),
@@ -44,16 +66,16 @@ public struct Scru128Id: LosslessStringConvertible {
       UInt8(truncatingIfNeeded: entropy >> 24),
       UInt8(truncatingIfNeeded: entropy >> 16),
       UInt8(truncatingIfNeeded: entropy >> 8),
-      UInt8(truncatingIfNeeded: entropy),
-    ]
+      UInt8(truncatingIfNeeded: entropy)
+    )
   }
 
   /// Creates an object from a 25-digit string representation.
   public init?(_ description: String) {
-    guard let bs = Self.parse(description) else {
+    guard let byteArray = Self.parse(description) else {
       return nil
     }
-    bytes = bs
+    self.init(byteArray)
   }
 
   /// Builds the 16-byte big-endian byte array representation from a string.
@@ -101,7 +123,12 @@ public struct Scru128Id: LosslessStringConvertible {
 
   /// Returns a 16-byte byte array containing the 128-bit unsigned integer representation in the
   /// big-endian (network) byte order.
-  public var byteArray: [UInt8] { bytes }
+  public var byteArray: [UInt8] {
+    [
+      bytes.0, bytes.1, bytes.2, bytes.3, bytes.4, bytes.5, bytes.6, bytes.7,
+      bytes.8, bytes.9, bytes.10, bytes.11, bytes.12, bytes.13, bytes.14, bytes.15,
+    ]
+  }
 
   /// Returns the 48-bit `timestamp` field value.
   public var timestamp: UInt64 { subUInt(0..<6) }
@@ -152,8 +179,27 @@ public struct Scru128Id: LosslessStringConvertible {
   /// Returns a part of `bytes` as an unsigned integer.
   private func subUInt<T: UnsignedInteger>(_ range: Range<Int>) -> T {
     var buffer: T = 0
-    for e in bytes[range] {
-      buffer = (buffer << 8) | T(e)
+    for i in range {
+      buffer <<= 8
+      switch i {
+      case 0: buffer |= T(bytes.0)
+      case 1: buffer |= T(bytes.1)
+      case 2: buffer |= T(bytes.2)
+      case 3: buffer |= T(bytes.3)
+      case 4: buffer |= T(bytes.4)
+      case 5: buffer |= T(bytes.5)
+      case 6: buffer |= T(bytes.6)
+      case 7: buffer |= T(bytes.7)
+      case 8: buffer |= T(bytes.8)
+      case 9: buffer |= T(bytes.9)
+      case 10: buffer |= T(bytes.10)
+      case 11: buffer |= T(bytes.11)
+      case 12: buffer |= T(bytes.12)
+      case 13: buffer |= T(bytes.13)
+      case 14: buffer |= T(bytes.14)
+      case 15: buffer |= T(bytes.15)
+      default: fatalError("unreachable")
+      }
     }
     return buffer
   }
@@ -183,17 +229,51 @@ private let decodeMap: [UInt8] = [
 ]
 
 extension Scru128Id: Comparable, Hashable {
+  private static func compare(_ lhs: Scru128Id, _ rhs: Scru128Id) -> Int {
+    if lhs.bytes.0 != rhs.bytes.0 { return lhs.bytes.0 < rhs.bytes.0 ? -1 : 1 }
+    if lhs.bytes.1 != rhs.bytes.1 { return lhs.bytes.1 < rhs.bytes.1 ? -1 : 1 }
+    if lhs.bytes.2 != rhs.bytes.2 { return lhs.bytes.2 < rhs.bytes.2 ? -1 : 1 }
+    if lhs.bytes.3 != rhs.bytes.3 { return lhs.bytes.3 < rhs.bytes.3 ? -1 : 1 }
+    if lhs.bytes.4 != rhs.bytes.4 { return lhs.bytes.4 < rhs.bytes.4 ? -1 : 1 }
+    if lhs.bytes.5 != rhs.bytes.5 { return lhs.bytes.5 < rhs.bytes.5 ? -1 : 1 }
+    if lhs.bytes.6 != rhs.bytes.6 { return lhs.bytes.6 < rhs.bytes.6 ? -1 : 1 }
+    if lhs.bytes.7 != rhs.bytes.7 { return lhs.bytes.7 < rhs.bytes.7 ? -1 : 1 }
+    if lhs.bytes.8 != rhs.bytes.8 { return lhs.bytes.8 < rhs.bytes.8 ? -1 : 1 }
+    if lhs.bytes.9 != rhs.bytes.9 { return lhs.bytes.9 < rhs.bytes.9 ? -1 : 1 }
+    if lhs.bytes.10 != rhs.bytes.10 { return lhs.bytes.10 < rhs.bytes.10 ? -1 : 1 }
+    if lhs.bytes.11 != rhs.bytes.11 { return lhs.bytes.11 < rhs.bytes.11 ? -1 : 1 }
+    if lhs.bytes.12 != rhs.bytes.12 { return lhs.bytes.12 < rhs.bytes.12 ? -1 : 1 }
+    if lhs.bytes.13 != rhs.bytes.13 { return lhs.bytes.13 < rhs.bytes.13 ? -1 : 1 }
+    if lhs.bytes.14 != rhs.bytes.14 { return lhs.bytes.14 < rhs.bytes.14 ? -1 : 1 }
+    if lhs.bytes.15 != rhs.bytes.15 { return lhs.bytes.15 < rhs.bytes.15 ? -1 : 1 }
+    return 0
+  }
+
   public static func == (lhs: Scru128Id, rhs: Scru128Id) -> Bool {
-    return lhs.bytes == rhs.bytes
+    compare(lhs, rhs) == 0
   }
 
   public static func < (lhs: Scru128Id, rhs: Scru128Id) -> Bool {
-    for i in 0..<lhs.bytes.count {
-      if lhs.bytes[i] != rhs.bytes[i] {
-        return lhs.bytes[i] < rhs.bytes[i]
-      }
-    }
-    return false
+    compare(lhs, rhs) < 0
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(bytes.0)
+    hasher.combine(bytes.1)
+    hasher.combine(bytes.2)
+    hasher.combine(bytes.3)
+    hasher.combine(bytes.4)
+    hasher.combine(bytes.5)
+    hasher.combine(bytes.6)
+    hasher.combine(bytes.7)
+    hasher.combine(bytes.8)
+    hasher.combine(bytes.9)
+    hasher.combine(bytes.10)
+    hasher.combine(bytes.11)
+    hasher.combine(bytes.12)
+    hasher.combine(bytes.13)
+    hasher.combine(bytes.14)
+    hasher.combine(bytes.15)
   }
 }
 

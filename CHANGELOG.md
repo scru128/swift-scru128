@@ -16,9 +16,16 @@ a case-insensitive scheme. Other changes include the removal of deprecated APIs.
 ### Changed
 
 - Letter case of generated IDs from uppercase to lowercase
+- Return type of `Scru128Id#bytes` property from `[UInt8]` to tuple of 16
+  `UInt8` byte values, as a result of change in internal representation of
+  `Scru128Id`
 - `Scru128Generator` to `Scru128Generator<R: RandomNumberGenerator>` to
   substitute static generics for dynamic existential type
 - Edge case behavior of generator functions' rollback allowance handling
+
+### Added
+
+- `Scru128Id#byteArray` to emulate old `Scru128Id#bytes` property
 
 ## v2.4.4 - 2023-06-21
 

@@ -96,6 +96,21 @@ final class Scru128IdTests: XCTestCase {
       XCTAssertEqual(Scru128Id(e.byteArray), e)
       XCTAssertEqual(Scru128Id(e.timestamp, e.counterHi, e.counterLo, e.entropy), e)
       XCTAssertEqual(try decoder.decode(Scru128Id.self, from: try encoder.encode(e)), e)
+
+      let tp = e.bytes
+      let ar = e.byteArray
+      XCTAssertEqual(
+        Scru128Id(
+          (
+            ar[0], ar[1], ar[2], ar[3], ar[4], ar[5], ar[6], ar[7],
+            ar[8], ar[9], ar[10], ar[11], ar[12], ar[13], ar[14], ar[15]
+          )
+        ), e)
+      XCTAssertEqual(
+        Scru128Id([
+          tp.0, tp.1, tp.2, tp.3, tp.4, tp.5, tp.6, tp.7,
+          tp.8, tp.9, tp.10, tp.11, tp.12, tp.13, tp.14, tp.15,
+        ]), e)
     }
   }
 
