@@ -6,12 +6,12 @@ public struct Scru128Id: LosslessStringConvertible {
 
   /// Creates an object from a byte array that represents a 128-bit unsigned integer.
   ///
-  /// - Parameter bytes: A 16-byte byte array that represents a 128-bit unsigned integer in the
-  ///                    big-endian (network) byte order.
+  /// - Parameter byteArray: A 16-byte byte array that represents a 128-bit unsigned integer in the
+  ///                        big-endian (network) byte order.
   /// - Precondition: The byte length of the argument must be 16.
-  public init(_ bytes: [UInt8]) {
-    precondition(bytes.count == 16)
-    self.bytes = bytes
+  public init(_ byteArray: [UInt8]) {
+    precondition(byteArray.count == 16)
+    bytes = byteArray
   }
 
   /// Creates an object from field values.
@@ -98,6 +98,10 @@ public struct Scru128Id: LosslessStringConvertible {
       return dst
     }
   }
+
+  /// Returns a 16-byte byte array containing the 128-bit unsigned integer representation in the
+  /// big-endian (network) byte order.
+  public var byteArray: [UInt8] { bytes }
 
   /// Returns the 48-bit `timestamp` field value.
   public var timestamp: UInt64 { subUInt(0..<6) }
