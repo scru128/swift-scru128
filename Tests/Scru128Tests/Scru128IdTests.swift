@@ -93,6 +93,7 @@ final class Scru128IdTests: XCTestCase {
     for e in cases {
       XCTAssertEqual(Scru128Id(e.description)!, e)
       XCTAssertEqual(Scru128Id(e.bytes), e)
+      XCTAssertEqual(Scru128Id(e.byteArray), e)
       XCTAssertEqual(Scru128Id(e.timestamp, e.counterHi, e.counterLo, e.entropy), e)
       XCTAssertEqual(try decoder.decode(Scru128Id.self, from: try encoder.encode(e)), e)
     }
@@ -121,6 +122,7 @@ final class Scru128IdTests: XCTestCase {
     for curr in ordered {
       XCTAssertNotEqual(curr, prev)
       XCTAssertNotEqual(prev, curr)
+      XCTAssertNotEqual(curr.byteArray, prev.byteArray)
       XCTAssertNotEqual(curr.hashValue, prev.hashValue)
       XCTAssertGreaterThan(curr, prev)
       XCTAssertGreaterThanOrEqual(curr, prev)
@@ -130,6 +132,7 @@ final class Scru128IdTests: XCTestCase {
       let clone = curr
       XCTAssertEqual(curr, clone)
       XCTAssertEqual(clone, curr)
+      XCTAssertEqual(curr.byteArray, clone.byteArray)
       XCTAssertEqual(curr.hashValue, clone.hashValue)
       XCTAssertGreaterThanOrEqual(curr, clone)
       XCTAssertGreaterThanOrEqual(clone, curr)
@@ -164,11 +167,11 @@ final class Scru128IdTests: XCTestCase {
       let obj = g.generate()
       let desc = obj.description
       let asStr = try encoder.encode(desc)
-      let asBytes = try encoder.encode(obj.bytes)
+      let asBinBytes = try encoder.encode(obj.byteArray)
       let asStrBytes = try encoder.encode([UInt8](desc.utf8))
 
       XCTAssertEqual(try decoder.decode(Scru128Id.self, from: asStr), obj)
-      XCTAssertEqual(try decoder.decode(Scru128Id.self, from: asBytes), obj)
+      XCTAssertEqual(try decoder.decode(Scru128Id.self, from: asBinBytes), obj)
       XCTAssertEqual(try decoder.decode(Scru128Id.self, from: asStrBytes), obj)
     }
   }

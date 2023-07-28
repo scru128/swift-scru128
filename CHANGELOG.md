@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.4.6 - unreleased
+
+### Added
+
+- `Scru128Id#byteArray` as synonym for deprecated `bytes`
+
+### Deprecated
+
+- `Scru128Id#bytes` to help migration to v3
+
 ## v2.4.5 - 2023-07-29
 
 ### Fixed
