@@ -5,6 +5,7 @@
 ### Added
 
 - `Scru128Id#byteArray` as synonym for deprecated `bytes`
+- `Scru128Id` initializer that receives tuple of 16 byte values
 
 ### Deprecated
 
