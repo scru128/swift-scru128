@@ -69,10 +69,10 @@ public struct Scru128Id: LosslessStringConvertible {
 
   /// Creates an object from a 25-digit string representation.
   public init?(_ description: String) {
-    guard let bs = Self.parse(description) else {
+    guard let byteArray = Self.parse(description) else {
       return nil
     }
-    bytes = bs
+    bytes = byteArray
   }
 
   /// Builds the 16-byte big-endian byte array representation from a string.
@@ -95,10 +95,7 @@ public struct Scru128Id: LosslessStringConvertible {
       var minIndex = 99  // any number greater than size of output array
       for i in stride(from: -5, to: 25, by: 10) {
         // implement Base36 using 10-digit words
-        var carry: UInt64 = 0
-        for e in src[(i < 0 ? 0 : i)..<(i + 10)] {
-          carry = (carry * 36) + UInt64(e)
-        }
+        var carry: UInt64 = src[(i < 0 ? 0 : i)..<(i + 10)].reduce(0) { $0 * 36 + UInt64($1) }
 
         // iterate over output array from right to left while carry != 0 but at least up to place
         // already filled
@@ -170,11 +167,7 @@ public struct Scru128Id: LosslessStringConvertible {
 
   /// Returns a part of `bytes` as an unsigned integer.
   private func subUInt<T: UnsignedInteger>(_ range: Range<Int>) -> T {
-    var buffer: T = 0
-    for e in bytes[range] {
-      buffer = (buffer << 8) | T(e)
-    }
-    return buffer
+    range.reduce(0) { $0 << 8 | T(bytes[$1]) }
   }
 }
 
@@ -202,14 +195,14 @@ private let decodeMap: [UInt8] = [
 ]
 
 extension Scru128Id: Comparable, Hashable {
-  public static func == (lhs: Scru128Id, rhs: Scru128Id) -> Bool {
-    return lhs.bytes == rhs.bytes
-  }
+  public static func == (lhs: Scru128Id, rhs: Scru128Id) -> Bool { lhs.bytes == rhs.bytes }
 
   public static func < (lhs: Scru128Id, rhs: Scru128Id) -> Bool {
-    for i in 0..<lhs.bytes.count {
-      if lhs.bytes[i] != rhs.bytes[i] {
-        return lhs.bytes[i] < rhs.bytes[i]
+    for i in 0..<16 {
+      let lft = lhs.bytes[i]
+      let rgt = rhs.bytes[i]
+      if lft != rgt {
+        return lft < rgt
       }
     }
     return false
