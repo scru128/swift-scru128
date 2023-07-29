@@ -27,6 +27,12 @@ a case-insensitive scheme. Other changes include the removal of deprecated APIs.
 
 - `Scru128Id#byteArray` to emulate old `Scru128Id#bytes` property
 
+## v2.4.5 - 2023-07-29
+
+### Fixed
+
+- Test case that could not compile with Xcode 13.4
+
 ## v2.4.4 - 2023-06-21
 
 ### Maintenance
