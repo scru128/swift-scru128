@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.4.5 - 2023-07-29
+
+### Fixed
+
+- Test case that could not compile with Xcode 13.4
+
 ## v2.4.4 - 2023-06-21
 
 ### Maintenance
