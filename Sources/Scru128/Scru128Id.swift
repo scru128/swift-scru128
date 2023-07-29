@@ -98,10 +98,7 @@ public struct Scru128Id: LosslessStringConvertible {
       var minIndex = 99  // any number greater than size of output array
       for i in stride(from: -5, to: 25, by: 10) {
         // implement Base36 using 10-digit words
-        var carry: UInt64 = 0
-        for e in src[(i < 0 ? 0 : i)..<(i + 10)] {
-          carry = (carry * 36) + UInt64(e)
-        }
+        var carry: UInt64 = src[(i < 0 ? 0 : i)..<(i + 10)].reduce(0) { $0 * 36 + UInt64($1) }
 
         // iterate over output array from right to left while carry != 0 but at least up to place
         // already filled
@@ -123,12 +120,7 @@ public struct Scru128Id: LosslessStringConvertible {
 
   /// Returns a 16-byte byte array containing the 128-bit unsigned integer representation in the
   /// big-endian (network) byte order.
-  public var byteArray: [UInt8] {
-    [
-      bytes.0, bytes.1, bytes.2, bytes.3, bytes.4, bytes.5, bytes.6, bytes.7,
-      bytes.8, bytes.9, bytes.10, bytes.11, bytes.12, bytes.13, bytes.14, bytes.15,
-    ]
-  }
+  public var byteArray: [UInt8] { (0..<16).map(byteAt) }
 
   /// Returns the 48-bit `timestamp` field value.
   public var timestamp: UInt64 { subUInt(0..<6) }
@@ -178,30 +170,43 @@ public struct Scru128Id: LosslessStringConvertible {
 
   /// Returns a part of `bytes` as an unsigned integer.
   private func subUInt<T: UnsignedInteger>(_ range: Range<Int>) -> T {
-    var buffer: T = 0
-    for i in range {
-      buffer <<= 8
-      switch i {
-      case 0: buffer |= T(bytes.0)
-      case 1: buffer |= T(bytes.1)
-      case 2: buffer |= T(bytes.2)
-      case 3: buffer |= T(bytes.3)
-      case 4: buffer |= T(bytes.4)
-      case 5: buffer |= T(bytes.5)
-      case 6: buffer |= T(bytes.6)
-      case 7: buffer |= T(bytes.7)
-      case 8: buffer |= T(bytes.8)
-      case 9: buffer |= T(bytes.9)
-      case 10: buffer |= T(bytes.10)
-      case 11: buffer |= T(bytes.11)
-      case 12: buffer |= T(bytes.12)
-      case 13: buffer |= T(bytes.13)
-      case 14: buffer |= T(bytes.14)
-      case 15: buffer |= T(bytes.15)
-      default: fatalError("unreachable")
+    range.reduce(0) { $0 << 8 | T(byteAt($1)) }
+  }
+
+  /// Returns the byte value of `self` at an index.
+  private func byteAt(_ index: Int) -> UInt8 {
+    precondition(0 <= index && index < 16)
+
+    // implement binary search
+    if index < 8 {
+      if index < 4 {
+        if index < 2 {
+          return index < 1 ? bytes.0 : bytes.1
+        } else {
+          return index < 3 ? bytes.2 : bytes.3
+        }
+      } else {
+        if index < 6 {
+          return index < 5 ? bytes.4 : bytes.5
+        } else {
+          return index < 7 ? bytes.6 : bytes.7
+        }
+      }
+    } else {
+      if index < 12 {
+        if index < 10 {
+          return index < 9 ? bytes.8 : bytes.9
+        } else {
+          return index < 11 ? bytes.10 : bytes.11
+        }
+      } else {
+        if index < 14 {
+          return index < 13 ? bytes.12 : bytes.13
+        } else {
+          return index < 15 ? bytes.14 : bytes.15
+        }
       }
     }
-    return buffer
   }
 }
 
@@ -229,51 +234,25 @@ private let decodeMap: [UInt8] = [
 ]
 
 extension Scru128Id: Comparable, Hashable {
-  private static func compare(_ lhs: Scru128Id, _ rhs: Scru128Id) -> Int {
-    if lhs.bytes.0 != rhs.bytes.0 { return lhs.bytes.0 < rhs.bytes.0 ? -1 : 1 }
-    if lhs.bytes.1 != rhs.bytes.1 { return lhs.bytes.1 < rhs.bytes.1 ? -1 : 1 }
-    if lhs.bytes.2 != rhs.bytes.2 { return lhs.bytes.2 < rhs.bytes.2 ? -1 : 1 }
-    if lhs.bytes.3 != rhs.bytes.3 { return lhs.bytes.3 < rhs.bytes.3 ? -1 : 1 }
-    if lhs.bytes.4 != rhs.bytes.4 { return lhs.bytes.4 < rhs.bytes.4 ? -1 : 1 }
-    if lhs.bytes.5 != rhs.bytes.5 { return lhs.bytes.5 < rhs.bytes.5 ? -1 : 1 }
-    if lhs.bytes.6 != rhs.bytes.6 { return lhs.bytes.6 < rhs.bytes.6 ? -1 : 1 }
-    if lhs.bytes.7 != rhs.bytes.7 { return lhs.bytes.7 < rhs.bytes.7 ? -1 : 1 }
-    if lhs.bytes.8 != rhs.bytes.8 { return lhs.bytes.8 < rhs.bytes.8 ? -1 : 1 }
-    if lhs.bytes.9 != rhs.bytes.9 { return lhs.bytes.9 < rhs.bytes.9 ? -1 : 1 }
-    if lhs.bytes.10 != rhs.bytes.10 { return lhs.bytes.10 < rhs.bytes.10 ? -1 : 1 }
-    if lhs.bytes.11 != rhs.bytes.11 { return lhs.bytes.11 < rhs.bytes.11 ? -1 : 1 }
-    if lhs.bytes.12 != rhs.bytes.12 { return lhs.bytes.12 < rhs.bytes.12 ? -1 : 1 }
-    if lhs.bytes.13 != rhs.bytes.13 { return lhs.bytes.13 < rhs.bytes.13 ? -1 : 1 }
-    if lhs.bytes.14 != rhs.bytes.14 { return lhs.bytes.14 < rhs.bytes.14 ? -1 : 1 }
-    if lhs.bytes.15 != rhs.bytes.15 { return lhs.bytes.15 < rhs.bytes.15 ? -1 : 1 }
-    return 0
-  }
-
   public static func == (lhs: Scru128Id, rhs: Scru128Id) -> Bool {
-    compare(lhs, rhs) == 0
+    (0..<16).allSatisfy { lhs.byteAt($0) == rhs.byteAt($0) }
   }
 
   public static func < (lhs: Scru128Id, rhs: Scru128Id) -> Bool {
-    compare(lhs, rhs) < 0
+    for i in 0..<16 {
+      let lft = lhs.byteAt(i)
+      let rgt = rhs.byteAt(i)
+      if lft != rgt {
+        return lft < rgt
+      }
+    }
+    return false
   }
 
   public func hash(into hasher: inout Hasher) {
-    hasher.combine(bytes.0)
-    hasher.combine(bytes.1)
-    hasher.combine(bytes.2)
-    hasher.combine(bytes.3)
-    hasher.combine(bytes.4)
-    hasher.combine(bytes.5)
-    hasher.combine(bytes.6)
-    hasher.combine(bytes.7)
-    hasher.combine(bytes.8)
-    hasher.combine(bytes.9)
-    hasher.combine(bytes.10)
-    hasher.combine(bytes.11)
-    hasher.combine(bytes.12)
-    hasher.combine(bytes.13)
-    hasher.combine(bytes.14)
-    hasher.combine(bytes.15)
+    for i in 0..<16 {
+      hasher.combine(byteAt(i))
+    }
   }
 }
 
