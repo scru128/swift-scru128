@@ -1,17 +1,39 @@
 /// Represents a SCRU128 ID and provides converters and comparison operators.
 public struct Scru128Id: LosslessStringConvertible {
-  /// Returns a 16-byte byte array containing the 128-bit unsigned integer representation in the
+  /// Returns a 16-byte byte tuple containing the 128-bit unsigned integer representation in the
   /// big-endian (network) byte order.
-  public let bytes: [UInt8]
+  public let bytes:
+    (
+      UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,
+      UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8
+    )
 
-  /// Creates an object from a byte array that represents a 128-bit unsigned integer.
+  /// Creates an object from a byte tuple that represents a 128-bit unsigned integer.
   ///
   /// - Parameter bytes: A 16-byte byte array that represents a 128-bit unsigned integer in the
   ///                    big-endian (network) byte order.
-  /// - Precondition: The byte length of the argument must be 16.
-  public init(_ bytes: [UInt8]) {
-    precondition(bytes.count == 16)
+  public init(
+    _ bytes: (
+      UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,
+      UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8
+    )
+  ) {
     self.bytes = bytes
+  }
+
+  /// Creates an object from a byte array that represents a 128-bit unsigned integer.
+  ///
+  /// - Parameter byteArray: A 16-byte byte array that represents a 128-bit unsigned integer in the
+  ///                        big-endian (network) byte order.
+  /// - Precondition: The byte length of the argument must be 16.
+  public init(_ byteArray: [UInt8]) {
+    precondition(byteArray.count == 16)
+    bytes = (
+      byteArray[0], byteArray[1], byteArray[2], byteArray[3],
+      byteArray[4], byteArray[5], byteArray[6], byteArray[7],
+      byteArray[8], byteArray[9], byteArray[10], byteArray[11],
+      byteArray[12], byteArray[13], byteArray[14], byteArray[15]
+    )
   }
 
   /// Creates an object from field values.
@@ -28,7 +50,7 @@ public struct Scru128Id: LosslessStringConvertible {
     precondition(timestamp <= maxTimestamp)
     precondition(counterHi <= maxCounterHi)
     precondition(counterLo <= maxCounterLo)
-    bytes = [
+    bytes = (
       UInt8(truncatingIfNeeded: timestamp >> 40),
       UInt8(truncatingIfNeeded: timestamp >> 32),
       UInt8(truncatingIfNeeded: timestamp >> 24),
@@ -44,16 +66,16 @@ public struct Scru128Id: LosslessStringConvertible {
       UInt8(truncatingIfNeeded: entropy >> 24),
       UInt8(truncatingIfNeeded: entropy >> 16),
       UInt8(truncatingIfNeeded: entropy >> 8),
-      UInt8(truncatingIfNeeded: entropy),
-    ]
+      UInt8(truncatingIfNeeded: entropy)
+    )
   }
 
   /// Creates an object from a 25-digit string representation.
   public init?(_ description: String) {
-    guard let bs = Self.parse(description) else {
+    guard let byteArray = Self.parse(description) else {
       return nil
     }
-    bytes = bs
+    self.init(byteArray)
   }
 
   /// Builds the 16-byte big-endian byte array representation from a string.
@@ -76,10 +98,7 @@ public struct Scru128Id: LosslessStringConvertible {
       var minIndex = 99  // any number greater than size of output array
       for i in stride(from: -5, to: 25, by: 10) {
         // implement Base36 using 10-digit words
-        var carry: UInt64 = 0
-        for e in src[(i < 0 ? 0 : i)..<(i + 10)] {
-          carry = (carry * 36) + UInt64(e)
-        }
+        var carry: UInt64 = src[(i < 0 ? 0 : i)..<(i + 10)].reduce(0) { $0 * 36 + UInt64($1) }
 
         // iterate over output array from right to left while carry != 0 but at least up to place
         // already filled
@@ -98,6 +117,10 @@ public struct Scru128Id: LosslessStringConvertible {
       return dst
     }
   }
+
+  /// Returns a 16-byte byte array containing the 128-bit unsigned integer representation in the
+  /// big-endian (network) byte order.
+  public var byteArray: [UInt8] { (0..<16).map(byteAt) }
 
   /// Returns the 48-bit `timestamp` field value.
   public var timestamp: UInt64 { subUInt(0..<6) }
@@ -147,11 +170,43 @@ public struct Scru128Id: LosslessStringConvertible {
 
   /// Returns a part of `bytes` as an unsigned integer.
   private func subUInt<T: UnsignedInteger>(_ range: Range<Int>) -> T {
-    var buffer: T = 0
-    for e in bytes[range] {
-      buffer = (buffer << 8) | T(e)
+    range.reduce(0) { $0 << 8 | T(byteAt($1)) }
+  }
+
+  /// Returns the byte value of `self` at an index.
+  private func byteAt(_ index: Int) -> UInt8 {
+    precondition(0 <= index && index < 16)
+
+    // implement binary search
+    if index < 8 {
+      if index < 4 {
+        if index < 2 {
+          return index < 1 ? bytes.0 : bytes.1
+        } else {
+          return index < 3 ? bytes.2 : bytes.3
+        }
+      } else {
+        if index < 6 {
+          return index < 5 ? bytes.4 : bytes.5
+        } else {
+          return index < 7 ? bytes.6 : bytes.7
+        }
+      }
+    } else {
+      if index < 12 {
+        if index < 10 {
+          return index < 9 ? bytes.8 : bytes.9
+        } else {
+          return index < 11 ? bytes.10 : bytes.11
+        }
+      } else {
+        if index < 14 {
+          return index < 13 ? bytes.12 : bytes.13
+        } else {
+          return index < 15 ? bytes.14 : bytes.15
+        }
+      }
     }
-    return buffer
   }
 }
 
@@ -180,16 +235,24 @@ private let decodeMap: [UInt8] = [
 
 extension Scru128Id: Comparable, Hashable {
   public static func == (lhs: Scru128Id, rhs: Scru128Id) -> Bool {
-    return lhs.bytes == rhs.bytes
+    (0..<16).allSatisfy { lhs.byteAt($0) == rhs.byteAt($0) }
   }
 
   public static func < (lhs: Scru128Id, rhs: Scru128Id) -> Bool {
-    for i in 0..<lhs.bytes.count {
-      if lhs.bytes[i] != rhs.bytes[i] {
-        return lhs.bytes[i] < rhs.bytes[i]
+    for i in 0..<16 {
+      let lft = lhs.byteAt(i)
+      let rgt = rhs.byteAt(i)
+      if lft != rgt {
+        return lft < rgt
       }
     }
     return false
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    for i in 0..<16 {
+      hasher.combine(byteAt(i))
+    }
   }
 }
 

@@ -93,8 +93,24 @@ final class Scru128IdTests: XCTestCase {
     for e in cases {
       XCTAssertEqual(Scru128Id(e.description)!, e)
       XCTAssertEqual(Scru128Id(e.bytes), e)
+      XCTAssertEqual(Scru128Id(e.byteArray), e)
       XCTAssertEqual(Scru128Id(e.timestamp, e.counterHi, e.counterLo, e.entropy), e)
       XCTAssertEqual(try decoder.decode(Scru128Id.self, from: try encoder.encode(e)), e)
+
+      let tp = e.bytes
+      let ar = e.byteArray
+      XCTAssertEqual(
+        Scru128Id(
+          (
+            ar[0], ar[1], ar[2], ar[3], ar[4], ar[5], ar[6], ar[7],
+            ar[8], ar[9], ar[10], ar[11], ar[12], ar[13], ar[14], ar[15]
+          )
+        ), e)
+      XCTAssertEqual(
+        Scru128Id([
+          tp.0, tp.1, tp.2, tp.3, tp.4, tp.5, tp.6, tp.7,
+          tp.8, tp.9, tp.10, tp.11, tp.12, tp.13, tp.14, tp.15,
+        ]), e)
     }
   }
 
@@ -121,6 +137,7 @@ final class Scru128IdTests: XCTestCase {
     for curr in ordered {
       XCTAssertNotEqual(curr, prev)
       XCTAssertNotEqual(prev, curr)
+      XCTAssertNotEqual(curr.byteArray, prev.byteArray)
       XCTAssertNotEqual(curr.hashValue, prev.hashValue)
       XCTAssertGreaterThan(curr, prev)
       XCTAssertGreaterThanOrEqual(curr, prev)
@@ -130,6 +147,7 @@ final class Scru128IdTests: XCTestCase {
       let clone = curr
       XCTAssertEqual(curr, clone)
       XCTAssertEqual(clone, curr)
+      XCTAssertEqual(curr.byteArray, clone.byteArray)
       XCTAssertEqual(curr.hashValue, clone.hashValue)
       XCTAssertGreaterThanOrEqual(curr, clone)
       XCTAssertGreaterThanOrEqual(clone, curr)
@@ -164,11 +182,11 @@ final class Scru128IdTests: XCTestCase {
       let obj = g.generate()
       let desc = obj.description
       let asStr = try encoder.encode(desc)
-      let asBytes = try encoder.encode(obj.bytes)
+      let asBinBytes = try encoder.encode(obj.byteArray)
       let asStrBytes = try encoder.encode([UInt8](desc.utf8))
 
       XCTAssertEqual(try decoder.decode(Scru128Id.self, from: asStr), obj)
-      XCTAssertEqual(try decoder.decode(Scru128Id.self, from: asBytes), obj)
+      XCTAssertEqual(try decoder.decode(Scru128Id.self, from: asBinBytes), obj)
       XCTAssertEqual(try decoder.decode(Scru128Id.self, from: asStrBytes), obj)
     }
   }
