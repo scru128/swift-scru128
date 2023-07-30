@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.0.0-rc.2 - 2023-07-29
+## v3.0.1 - 2023-07-30
 
 Most notably, v3 switches the letter case of generated IDs from uppercase (e.g.,
 "036Z951MHJIKZIK2GSL81GR7L") to lowercase (e.g., "036z951mhjikzik2gsl81gr7l"),
@@ -26,6 +26,23 @@ a case-insensitive scheme. Other changes include the removal of deprecated APIs.
 ### Added
 
 - `Scru128Id#byteArray` to emulate old `Scru128Id#bytes` property
+
+## v2.4.6 - 2023-07-30
+
+### Added
+
+- `Scru128Id#byteArray` as synonym for deprecated `bytes`
+- `Scru128Id` initializer that receives tuple of 16 byte values
+
+### Deprecated
+
+- `Scru128Id#bytes` to help migration to v3
+
+## v2.4.5 - 2023-07-29
+
+### Fixed
+
+- Test case that could not compile with Xcode 13.4
 
 ## v2.4.4 - 2023-06-21
 
