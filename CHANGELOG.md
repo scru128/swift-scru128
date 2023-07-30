@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.4.6 - 2023-07-30
+
+### Added
+
+- `Scru128Id#byteArray` as synonym for deprecated `bytes`
+- `Scru128Id` initializer that receives tuple of 16 byte values
+
+### Deprecated
+
+- `Scru128Id#bytes` to help migration to v3
+
 ## v2.4.5 - 2023-07-29
 
 ### Fixed
