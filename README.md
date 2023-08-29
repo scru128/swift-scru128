@@ -22,7 +22,7 @@ import Scru128
 // generate a new identifier object
 let x = scru128()
 print(x)  // e.g., "036z951mhjikzik2gsl81gr7l"
-print(x.bytes)  // as a 128-bit unsigned integer in big-endian byte array
+print(x.byteArray)  // as a 128-bit unsigned integer in big-endian byte array
 
 // generate a textual representation directly
 print(scru128String())  // e.g., "036z951mhzx67t63mq9xe6q0j"
