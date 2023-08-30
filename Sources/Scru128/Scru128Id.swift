@@ -263,7 +263,7 @@ extension Scru128Id: Codable {
     try container.encode(description)
   }
 
-  /// Decodes the object from a 25-digit canonical string representation or  a 16-byte big-endian
+  /// Decodes the object from a 25-digit canonical string representation or a 16-byte big-endian
   /// byte array.
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
