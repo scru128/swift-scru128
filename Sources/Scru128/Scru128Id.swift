@@ -72,25 +72,22 @@ public struct Scru128Id: LosslessStringConvertible {
 
   /// Creates an object from a 25-digit string representation.
   public init?(_ description: String) {
-    guard let byteArray = Self.parse(description) else {
-      return nil
-    }
-    self.init(byteArray)
+    try? self.init(parsing: description)
   }
 
   /// Builds the 16-byte big-endian byte array representation from a string.
-  private static func parse(_ description: String) -> [UInt8]? {
-    var desc = description
-    return desc.withUTF8 {
+  private init(parsing: String) throws {
+    var description = parsing
+    let byteArray = try description.withUTF8 {
       if $0.count != 25 {
-        return nil  // invalid length
+        throw ParseError(message: "invalid length: \($0.count) bytes (expected 25)")
       }
 
       var src = [UInt8](repeating: 0, count: 25)
       for i in 0..<src.count {
         src[i] = decodeMap[Int($0[i])]
         if src[i] == 0xff {
-          return nil  // invalid digit
+          throw ParseError(message: "invalid digit at \(i)")
         }
       }
 
@@ -105,7 +102,7 @@ public struct Scru128Id: LosslessStringConvertible {
         var j = dst.count - 1
         while carry > 0 || j > minIndex {
           if j < 0 {
-            return nil  // out of 128-bit value range
+            throw ParseError(message: "out of 128-bit value range")
           }
           carry += UInt64(dst[j]) * 3_656_158_440_062_976  // 36^10
           dst[j] = UInt8(truncatingIfNeeded: carry)
@@ -116,6 +113,13 @@ public struct Scru128Id: LosslessStringConvertible {
       }
       return dst
     }
+    self.init(byteArray)
+  }
+
+  /// An error parsing an invalid string representation of SCRU128 ID.
+  private struct ParseError: Error, CustomStringConvertible {
+    let message: String
+    var description: String { "could not parse string as SCRU128 ID: \(message)" }
   }
 
   /// Returns a 16-byte byte array containing the 128-bit unsigned integer representation in the
@@ -269,21 +273,22 @@ extension Scru128Id: Codable {
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
     if let strValue = try? container.decode(String.self) {
-      guard let bs = Self.parse(strValue) else {
-        throw DecodingError.dataCorruptedError(
-          in: container, debugDescription: "could not parse string as Scru128Id")
+      do {
+        try self.init(parsing: strValue)
+      } catch let err as ParseError {
+        throw DecodingError.dataCorruptedError(in: container, debugDescription: err.description)
       }
-      self.init(bs)
     } else if let byteArray = try? container.decode([UInt8].self) {
       if byteArray.count == 16 {
         self.init(byteArray)
       } else if byteArray.allSatisfy({ $0 < 0x80 }) {
         let strValue = String(cString: byteArray + [0])
-        guard let bs = Self.parse(strValue) else {
+        do {
+          try self.init(parsing: strValue)
+        } catch is ParseError {
           throw DecodingError.dataCorruptedError(
             in: container, debugDescription: "could not parse byte array as Scru128Id")
         }
-        self.init(bs)
       } else {
         throw DecodingError.dataCorruptedError(
           in: container, debugDescription: "could not parse byte array as Scru128Id")
