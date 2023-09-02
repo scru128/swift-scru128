@@ -2,6 +2,10 @@
 
 ## v3.0.2 - unreleased
 
+### Fixed
+
+- Mishandling of `UnsafeMutableBufferPointer` in `Scru128Id#description`
+
 ### Maintenance
 
 - Updated README

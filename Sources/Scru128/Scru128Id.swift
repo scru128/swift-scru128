@@ -158,13 +158,14 @@ public struct Scru128Id: LosslessStringConvertible {
       for i in 0..<25 {
         dst[i] = digits[Int(dst[i])]
       }
-      return dst.count
+      return 25
     }
 
     if #available(iOS 14.0, macOS 11.0, macCatalyst 14.0, tvOS 14.0, watchOS 7.0, *) {
       return String(unsafeUninitializedCapacity: 25, initializingUTF8With: buildUtf8Bytes)
     } else {
-      return String(cString: [UInt8](unsafeUninitializedCapacity: 26) { $1 = buildUtf8Bytes($0) })
+      return String(
+        cString: [UInt8](unsafeUninitializedCapacity: 26) { $1 = buildUtf8Bytes($0) + 1 })
     }
   }
 
