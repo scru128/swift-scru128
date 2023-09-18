@@ -6,7 +6,7 @@ let defaultRollbackAllowance: UInt64 = 10_000  // 10 seconds
 /// Represents a SCRU128 ID generator that encapsulates the monotonic counters and other internal
 /// states.
 ///
-/// The generator offers four different methods to generate a SCRU128 ID:
+/// The generator comes with four different methods that generate a SCRU128 ID:
 ///
 /// | Flavor                                                | Timestamp | Thread- | On big clock rewind |
 /// | ----------------------------------------------------- | --------- | ------- | ------------------- |
@@ -15,12 +15,15 @@ let defaultRollbackAllowance: UInt64 = 10_000  // 10 seconds
 /// | ``generateOrResetCore(timestamp:rollbackAllowance:)`` | Argument  | Unsafe  | Resets generator    |
 /// | ``generateOrAbortCore(timestamp:rollbackAllowance:)`` | Argument  | Unsafe  | Returns `nil`       |
 ///
-/// All of these methods return monotonically increasing IDs unless a `timestamp` provided is
-/// significantly (by default, more than ten seconds) smaller than the one embedded in the
-/// immediately preceding ID. If such a significant clock rollback is detected, the `generate`
-/// (OrReset) method resets the generator and returns a new ID based on the given `timestamp`, while
-/// the `OrAbort` variants abort and return `nil`. The `Core` functions offer low-level
-/// thread-unsafe primitives.
+/// All of the four return a monotonically increasing ID by reusing the previous `timestamp` even if
+/// the one provided is smaller than the immediately preceding ID's. However, when such a clock
+/// rollback is considered significant (by default, more than ten seconds):
+///
+/// 1.  `generate` (OrReset) methods reset the generator and return a new ID based on the given
+///     `timestamp`, breaking the increasing order of IDs.
+/// 2.  `OrAbort` variants abort and return `nil` immediately.
+///
+/// The `Core` functions offer low-level thread-unsafe primitives to customize the behavior.
 public class Scru128Generator<R: RandomNumberGenerator> {
   private var timestamp: UInt64 = 0
   private var counterHi: UInt32 = 0

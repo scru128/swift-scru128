@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.0.2 - 2023-09-18
+
+### Fixed
+
+- Mishandling of `UnsafeMutableBufferPointer` in `Scru128Id#description`
+
+### Maintenance
+
+- Refactored private methods and error messages
+- Improved documentation about generator's clock rollback behavior
+- Updated README
+
 ## v3.0.1 - 2023-07-30
 
 Most notably, v3 switches the letter case of generated IDs from uppercase (e.g.,
