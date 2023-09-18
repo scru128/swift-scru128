@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.0.2 - unreleased
+## v3.0.2 - 2023-09-18
 
 ### Fixed
 
@@ -9,6 +9,7 @@
 ### Maintenance
 
 - Refactored private methods and error messages
+- Improved documentation about generator's clock rollback behavior
 - Updated README
 
 ## v3.0.1 - 2023-07-30
